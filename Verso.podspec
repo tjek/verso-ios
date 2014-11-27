@@ -12,8 +12,7 @@ Pod::Spec.new do |s|
     
     s.source       = {
         :git => "https://github.com/eTilbudsavis/ios-verso.git",
-        :tag => "v" + s.version.to_s,
-        :submodules => true
+        :tag => "v" + s.version.to_s
     }
     
     s.public_header_files = "Verso/ETA_VersoPagedView.h"
