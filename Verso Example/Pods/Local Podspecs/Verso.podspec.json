@@ -1,0 +1,26 @@
+{
+    "name": "Verso",
+    "version": "0.0.1",
+    "license": "MIT",
+    "summary": "A multi-paged image viewer",
+    "homepage": "https://github.com/eTilbudsavis/ios-verso",
+    "authors": {
+        "Laurie Hufford": "lh@etilbudsavis.dk"
+    },
+    
+    "requires_arc": true,
+    "platforms": {
+        "ios": "6.0"
+    },
+    
+    "source": {
+        "git": "https://github.com/eTilbudsavis/ios-verso.git",
+        "tag": "0.0.1"
+    },
+    "source_files": "Verso/*.{h,m}",
+    "public_header_files": "Verso/ETA_VersoPagedView.h",
+    "dependencies": {
+        "libextobjc/EXTScope": ["~> 0.4.1"],
+        "SDWebImage": ["~> 3.7.1"]
+    }
+}
