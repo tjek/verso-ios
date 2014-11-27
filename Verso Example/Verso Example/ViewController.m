@@ -184,6 +184,7 @@
     if (pageIndex == 0)
     {
         NSDictionary* planetRects = [self planetOverviewHotspotRects];
+        __block BOOL tappedHotspot = NO;
         [planetRects enumerateKeysAndObjectsUsingBlock:^(id key, NSValue* rectValue, BOOL *stop) {
             if (CGRectContainsPoint(rectValue.CGRectValue, normalizedPoint))
             {
@@ -191,10 +192,13 @@
                 if (planetPageIndex != NSNotFound)
                     [versoPagedView goToPageIndex:planetPageIndex animated:YES];
                 
+                tappedHotspot = YES;
                 *stop = YES;
                 return;
             }
         }];
+        if (tappedHotspot == YES)
+            return;
     }
     
     // tap on right side - go to next page
