@@ -17,4 +17,4 @@ The following 3rd party code will automatically be included when you use Verso:
 
 ## Example
 
-The example project gives you a brief look at how to implement a `VersoPagedView`. It includes 
+The example project gives you a brief look at how to implement a `VersoPagedView`, including hotspots and single->two page switching.
