@@ -35,6 +35,7 @@
 		AE71DB171A2687360090297F /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		AE71DB1E1A2720110090297F /* CHANGES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = CHANGES.md; path = ../CHANGES.md; sourceTree = "<group>"; };
 		AE71DB1F1A2731A00090297F /* TODO.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = TODO.md; path = ../TODO.md; sourceTree = "<group>"; };
+		AE71DB8C1A2766640090297F /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = LICENSE.md; path = ../LICENSE.md; sourceTree = "<group>"; };
 		C6153B8B381BCC3324196804 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -110,6 +111,7 @@
 				AE71DB171A2687360090297F /* README.md */,
 				AE71DB1E1A2720110090297F /* CHANGES.md */,
 				AE71DB1F1A2731A00090297F /* TODO.md */,
+				AE71DB8C1A2766640090297F /* LICENSE.md */,
 			);
 			name = Podspec;
 			sourceTree = "<group>";

@@ -1,12 +1,8 @@
 PODS:
-  - libextobjc/EXTScope (0.4.1):
-    - libextobjc/RuntimeExtensions
-  - libextobjc/RuntimeExtensions (0.4.1)
   - SDWebImage (3.7.1):
     - SDWebImage/Core (= 3.7.1)
   - SDWebImage/Core (3.7.1)
   - Verso (0.0.1):
-    - libextobjc/EXTScope (~> 0.4.1)
     - SDWebImage (~> 3.7.1)
 
 DEPENDENCIES:
@@ -17,8 +13,7 @@ EXTERNAL SOURCES:
     :path: ../
 
 SPEC CHECKSUMS:
-  libextobjc: d6146fce3ebea986b7f75fcb4c967639200b88b0
   SDWebImage: 116e88633b5b416ea0ca4b334a4ac59cf72dd38d
-  Verso: 7564ef3c80e1e2dd85e8e6a03c6287e07d179c0e
+  Verso: efd0ee97681c82159716d4531469cb167872b853
 
 COCOAPODS: 0.35.0
