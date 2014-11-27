@@ -31,7 +31,7 @@
 		AE71DAE81A261F880090297F /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		AE71DAEB1A261F880090297F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/LaunchScreen.xib; sourceTree = "<group>"; };
 		AE71DB031A2620030090297F /* Main.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
-		AE71DB161A2687360090297F /* Verso.podspec.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; name = Verso.podspec.json; path = ../Verso.podspec.json; sourceTree = "<group>"; };
+		AE71DB161A2687360090297F /* Verso.podspec */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Verso.podspec; path = ../Verso.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		AE71DB171A2687360090297F /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		AE71DB1E1A2720110090297F /* CHANGES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = CHANGES.md; path = ../CHANGES.md; sourceTree = "<group>"; };
 		AE71DB1F1A2731A00090297F /* TODO.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = TODO.md; path = ../TODO.md; sourceTree = "<group>"; };
@@ -106,7 +106,7 @@
 		AE71DB151A2687280090297F /* Podspec */ = {
 			isa = PBXGroup;
 			children = (
-				AE71DB161A2687360090297F /* Verso.podspec.json */,
+				AE71DB161A2687360090297F /* Verso.podspec */,
 				AE71DB171A2687360090297F /* README.md */,
 				AE71DB1E1A2720110090297F /* CHANGES.md */,
 				AE71DB1F1A2731A00090297F /* TODO.md */,
