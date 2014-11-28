@@ -37,22 +37,30 @@
 
 static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellIdentifier";
 
-- (instancetype) init
+- (instancetype) initWithCoder:(NSCoder *)aDecoder
 {
-    return [self initWithFrame:CGRectZero];
+    if ((self = [super initWithCoder:aDecoder]))
+    {
+        [self _commonVersoPagedViewInit];
+    }
+    return self;
 }
-
 - (instancetype) initWithFrame:(CGRect)frame
 {
     if ((self = [super initWithFrame:frame]))
     {
-        _currentPageIndex = 0;
-        _numberOfPages = 0;
-        _singlePageMode = YES;
-        
-        [self addSubviews];
+        [self _commonVersoPagedViewInit];
     }
     return self;
+}
+
+- (void) _commonVersoPagedViewInit
+{
+    _currentPageIndex = 0;
+    _numberOfPages = 0;
+    _singlePageMode = YES;
+    
+    [self addSubviews];
 }
 
 - (void)addSubviews
@@ -60,38 +68,15 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     [self addSubview:self.collectionView];
 }
 
-- (void) dealloc
+- (void) layoutSubviews
 {
-    self.delegate = nil;
-    self.dataSource = nil;
-}
-
-
-
-#pragma mark - Frame change
-
-
-- (void) setFrame:(CGRect)frame
-{
-    CGSize oldSize = self.frame.size;
-    CGSize newSize = frame.size;
+    // invalidate the layout before re-laying out the collection view (to avoid incorrect item size errors)
+    [self.collectionView.collectionViewLayout invalidateLayout];
     
-    // if the size changed the invalidate the layout, so that item size changes
-    BOOL sizeChanged = CGSizeEqualToSize(oldSize, newSize) == NO;
-    if (sizeChanged)
-    {
-//        NSLog(@"set Size %@->%@", NSStringFromCGSize(oldSize), NSStringFromCGSize(newSize));
-        // mark as item size needing to be recalculated
-        [self.collectionView.collectionViewLayout invalidateLayout];
-    }
+    [super layoutSubviews];
     
-    super.frame = frame;
-    
-    if (sizeChanged)
-    {
-        // move the collection view to show that currently visible page
-        [self.collectionView scrollToItemAtIndexPath:self.currentIndexPath atScrollPosition:UICollectionViewScrollPositionLeft | UICollectionViewScrollPositionTop animated:NO];
-    }
+    // move back to the visible item
+    [self.collectionView scrollToItemAtIndexPath:self.currentIndexPath atScrollPosition:UICollectionViewScrollPositionLeft | UICollectionViewScrollPositionTop animated:NO];
 }
 
 - (void) didMoveToSuperview
@@ -101,6 +86,12 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     [self reloadPages];
 }
 
+
+- (void) dealloc
+{
+    self.delegate = nil;
+    self.dataSource = nil;
+}
 
 
 
@@ -582,7 +573,6 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         layout.sectionInset = UIEdgeInsetsZero;
         
         _collectionView = [[UICollectionView alloc] initWithFrame:self.bounds collectionViewLayout:layout];
-        layout.itemSize = _collectionView.bounds.size;
         
         _collectionView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         
