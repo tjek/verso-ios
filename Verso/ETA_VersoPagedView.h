@@ -68,7 +68,12 @@
 
 
 @optional
+
 - (NSDictionary*) versoPagedView:(ETA_VersoPagedView*)versoPagedView hotspotRectsForPageIndex:(NSUInteger)pageIndex;
+
+// normalizedByWidth means that the width of the hotspot is normalized 0->1, but the height is normalized 0->[image height/width]. Defaults to NO.
+// For example, a hotspot with origin [0.5, 0.5] in an image of size 100x150 will have a pixel origin of [50, 66.6] if normalizedByWidth is true. Otherwise, if false, the pixel origin would be [50, 75]
+- (BOOL) versoPagedView:(ETA_VersoPagedView*)versoPagedView hotspotRectsNormalizedByWidthForPageIndex:(NSUInteger)pageIndex;
 
 @end
 
@@ -86,9 +91,9 @@
 
 - (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didChangeVisiblePageIndexRangeFrom:(NSRange)previousVisiblePageIndexRange;
 
-- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didTapLocation:(CGPoint)tapLocation normalizedPoint:(CGPoint)normalizedPoint onPageIndex:(NSUInteger)pageIndex;
+- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didTapLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
 
-- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didLongPressLocation:(CGPoint)longPressLocation normalizedPoint:(CGPoint)normalizedPoint onPageIndex:(NSUInteger)pageIndex;
+- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didLongPressLocation:(CGPoint)longPressLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
 
 - (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didSetImage:(UIImage*)image isZoomImage:(BOOL)isZoomImage onPageIndex:(NSUInteger)pageIndex;
 

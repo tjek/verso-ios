@@ -231,19 +231,19 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     }
 }
 
-- (void) didTapLocation:(CGPoint)tapLocation normalizedPoint:(CGPoint)normalizedPoint onPageIndex:(NSUInteger)pageIndex
+- (void) didTapLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys
 {
-    if ([self.delegate respondsToSelector:@selector(versoPagedView:didTapLocation:normalizedPoint:onPageIndex:)])
+    if ([self.delegate respondsToSelector:@selector(versoPagedView:didTapLocation:onPageIndex:hittingHotspotsWithKeys:)])
     {
-        [self.delegate versoPagedView:self didTapLocation:tapLocation normalizedPoint:normalizedPoint onPageIndex:pageIndex];
+        [self.delegate versoPagedView:self didTapLocation:tapLocation onPageIndex:pageIndex hittingHotspotsWithKeys:hotspotKeys];
     }
 }
 
-- (void) didLongPressLocation:(CGPoint)longPressLocation normalizedPoint:(CGPoint)normalizedPoint onPageIndex:(NSUInteger)pageIndex
+- (void) didLongPressLocation:(CGPoint)longPressLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys
 {
-    if ([self.delegate respondsToSelector:@selector(versoPagedView:didLongPressLocation:normalizedPoint:onPageIndex:)])
+    if ([self.delegate respondsToSelector:@selector(versoPagedView:didLongPressLocation:onPageIndex:hittingHotspotsWithKeys:)])
     {
-        [self.delegate versoPagedView:self didLongPressLocation:longPressLocation normalizedPoint:normalizedPoint onPageIndex:pageIndex];
+        [self.delegate versoPagedView:self didLongPressLocation:longPressLocation onPageIndex:pageIndex hittingHotspotsWithKeys:hotspotKeys];
     }
 }
 
@@ -300,7 +300,6 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 - (NSDictionary*) hotspotRectsForPageIndex:(NSUInteger)pageIndex
 {
     NSDictionary* hotspotRects = nil;
-    
     if ([self.dataSource respondsToSelector:@selector(versoPagedView:hotspotRectsForPageIndex:)])
     {
         hotspotRects = [self.dataSource versoPagedView:self hotspotRectsForPageIndex:pageIndex];
@@ -309,7 +308,15 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     return hotspotRects;
 }
 
-
+- (BOOL) hotspotsNormalizedByWidthForPageIndex:(NSUInteger)pageIndex
+{
+    BOOL hotspotsNormalizedByWidth = NO;
+    if ([self.dataSource respondsToSelector:@selector(versoPagedView:hotspotRectsNormalizedByWidthForPageIndex:)])
+    {
+        hotspotsNormalizedByWidth = [self.dataSource versoPagedView:self hotspotRectsNormalizedByWidthForPageIndex:pageIndex];
+    }
+    return hotspotsNormalizedByWidth;
+}
 
 
 
@@ -352,7 +359,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 }
 
 
-- (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didReceiveTapAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide atNormalizedPoint:(CGPoint)normalizedPoint
+- (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didReceiveTapAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide hittingHotspotsWithKeys:(NSArray *)hotspotKeys
 {
     NSInteger pageIndex = [pageSpreadCell pageIndexForSide:pageSide];
     if (pageIndex < 0)
@@ -360,10 +367,10 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     CGPoint locationInReader = [self convertPoint:locationInPageView fromView:pageSpreadCell];
 
-    [self didTapLocation:locationInReader normalizedPoint:normalizedPoint onPageIndex:pageIndex];
+    [self didTapLocation:locationInReader onPageIndex:pageIndex hittingHotspotsWithKeys:hotspotKeys];
 }
 
-- (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didReceiveLongPressAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide atNormalizedPoint:(CGPoint)normalizedPoint
+- (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didReceiveLongPressAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide hittingHotspotsWithKeys:(NSArray *)hotspotKeys
 {
     NSInteger pageIndex = [pageSpreadCell pageIndexForSide:pageSide];
     if (pageIndex < 0)
@@ -371,7 +378,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     CGPoint locationInReader = [self convertPoint:locationInPageView fromView:pageSpreadCell];
     
-    [self didLongPressLocation:locationInReader normalizedPoint:normalizedPoint onPageIndex:pageIndex];
+    [self didLongPressLocation:locationInReader onPageIndex:pageIndex hittingHotspotsWithKeys:hotspotKeys];
 }
 
 
@@ -403,14 +410,14 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     
     [pageView setShowHotspots:showHotspots animated:animated];
-    [pageView setHotspotRects:[self hotspotRectsForPageIndex:firstPageIndex] forSide:ETA_VersoPageSpreadSide_Primary];
+    [pageView setHotspotRects:[self hotspotRectsForPageIndex:firstPageIndex] forSide:ETA_VersoPageSpreadSide_Primary normalizedByWidth:[self hotspotsNormalizedByWidthForPageIndex:firstPageIndex]];
     [pageView setPageIndex:firstPageIndex forSide:ETA_VersoPageSpreadSide_Primary];
 
     
     if (!singlePageMode)
     {
         [pageView setPageIndex:lastPageIndex forSide:ETA_VersoPageSpreadSide_Secondary];
-        [pageView setHotspotRects:[self hotspotRectsForPageIndex:lastPageIndex] forSide: ETA_VersoPageSpreadSide_Secondary];
+        [pageView setHotspotRects:[self hotspotRectsForPageIndex:lastPageIndex] forSide: ETA_VersoPageSpreadSide_Secondary normalizedByWidth:[self hotspotsNormalizedByWidthForPageIndex:lastPageIndex]];
     }
     
     

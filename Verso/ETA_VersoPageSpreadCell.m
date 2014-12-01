@@ -398,7 +398,7 @@
 }
 
 
-- (void) setHotspotRects:(NSDictionary *)hotspotRects forSide:(ETA_VersoPageSpreadSide)pageSide
+- (void) setHotspotRects:(NSDictionary *)hotspotRects forSide:(ETA_VersoPageSpreadSide)pageSide normalizedByWidth:(BOOL)normalizedByWidth
 {
     ETA_VersoSinglePageContentsView* pageContentsView = nil;
     switch (pageSide) {
@@ -409,13 +409,14 @@
             pageContentsView = self.secondaryPageContents;
             break;
     }
-    [self setHotspotRects:hotspotRects forPageContentsView:pageContentsView];
+    [self setHotspotRects:hotspotRects forPageContentsView:pageContentsView normalizedByWidth:normalizedByWidth];
 }
 
-- (void) setHotspotRects:(NSDictionary *)hotspotRects forPageContentsView:(ETA_VersoSinglePageContentsView*)pageContentsView
+- (void) setHotspotRects:(NSDictionary *)hotspotRects forPageContentsView:(ETA_VersoSinglePageContentsView*)pageContentsView normalizedByWidth:(BOOL)normalizedByWidth
 {
     [pageContentsView clearHotspotRects];
     [pageContentsView addHotspotRects:hotspotRects];
+    pageContentsView.hotspotsNormalizedByWidth = normalizedByWidth;
 }
 
 
@@ -494,17 +495,17 @@
 
 #pragma mark - Tapping Actions
 
-- (CGPoint) _normalizePoint:(CGPoint)pointToNormalize withinPageContentsView:(ETA_VersoSinglePageContentsView*)pageContentsView
-{
-    // convert pointToNormalize (which is relative to the pageContentsView) to hotspot-ratio (width = 1, height = aspectRatio)
-    CGSize pageContentsSize = pageContentsView.bounds.size;
-    pointToNormalize.x = pageContentsSize.width != 0 ? pointToNormalize.x / pageContentsSize.width : 0;
-    pointToNormalize.y = pageContentsSize.height != 0 ? pointToNormalize.y / pageContentsSize.height : 0;
-    
-//    normalizedPoint
-//    CGPoint normalizedPoint = pageContentsSize.width != 0 ? CGPointMake(pointToNormalize.x / pageContentsSize.width, pointToNormalize.y/pageContentsSize.width) : CGPointZero;
-    return pointToNormalize;
-}
+//- (CGPoint) _normalizePoint:(CGPoint)pointToNormalize withinPageContentsView:(ETA_VersoSinglePageContentsView*)pageContentsView
+//{
+//    // convert pointToNormalize (which is relative to the pageContentsView) to hotspot-ratio (width = 1, height = aspectRatio)
+//    CGSize pageContentsSize = pageContentsView.bounds.size;
+//    pointToNormalize.x = pageContentsSize.width != 0 ? pointToNormalize.x / pageContentsSize.width : 0;
+//    pointToNormalize.y = pageContentsSize.height != 0 ? pointToNormalize.y / pageContentsSize.height : 0;
+//    
+////    normalizedPoint
+////    CGPoint normalizedPoint = pageContentsSize.width != 0 ? CGPointMake(pointToNormalize.x / pageContentsSize.width, pointToNormalize.y/pageContentsSize.width) : CGPointZero;
+//    return pointToNormalize;
+//}
 
 
 - (ETA_VersoSinglePageContentsView*) _pageContentsViewForSide:(ETA_VersoPageSpreadSide)pageSide
@@ -537,14 +538,11 @@
     ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
     ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
     
-    // convert tap location to hotspot-ratio (width = 1, height = aspectRatio)
-    CGPoint normalizedPoint = [self _normalizePoint:[tap locationInView:pageContentsView] withinPageContentsView:pageContentsView];
+    NSArray* hotspotKeys = [pageContentsView hotspotKeysAtPoint:[tap locationInView:pageContentsView]];
     
-    
-    
-    if ([self.delegate respondsToSelector:@selector(versoPageSpread:didReceiveTapAtPoint:onPageSide:atNormalizedPoint:)])
+    if ([self.delegate respondsToSelector:@selector(versoPageSpread:didReceiveTapAtPoint:onPageSide:hittingHotspotsWithKeys:)])
     {
-        [self.delegate versoPageSpread:self didReceiveTapAtPoint:locationInPage onPageSide:pageSide atNormalizedPoint:normalizedPoint];
+        [self.delegate versoPageSpread:self didReceiveTapAtPoint:locationInPage onPageSide:pageSide hittingHotspotsWithKeys:hotspotKeys];
     }
 }
 
@@ -560,14 +558,11 @@
     ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
     ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
     
-    // convert tap location to hotspot-ratio (width = 1, height = aspectRatio)
-    CGPoint normalizedPoint = [self _normalizePoint:[tap locationInView:pageContentsView] withinPageContentsView:pageContentsView];
+    NSArray* hotspotKeys = [pageContentsView hotspotKeysAtPoint:[tap locationInView:pageContentsView]];
     
-    
-    
-    if ([self.delegate respondsToSelector:@selector(versoPageSpread:didReceiveLongPressAtPoint:onPageSide:atNormalizedPoint:)])
+    if ([self.delegate respondsToSelector:@selector(versoPageSpread:didReceiveLongPressAtPoint:onPageSide:hittingHotspotsWithKeys:)])
     {
-        [self.delegate versoPageSpread:self didReceiveLongPressAtPoint:locationInPage onPageSide:pageSide atNormalizedPoint:normalizedPoint];
+        [self.delegate versoPageSpread:self didReceiveLongPressAtPoint:locationInPage onPageSide:pageSide hittingHotspotsWithKeys:hotspotKeys];
     }
 
 }

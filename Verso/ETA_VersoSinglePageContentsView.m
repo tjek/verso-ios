@@ -151,17 +151,20 @@
 {
     @synchronized(self.hotspotRects)
     {
-//        CGSize contentSize = self.intrinsicContentSize;
-//        CGFloat widthByHeight = 1.0;
-//        if (contentSize.height != UIViewNoIntrinsicMetric && contentSize.width != UIViewNoIntrinsicMetric && contentSize.width > 0 && contentSize.height > 0)
-//        {
-//            widthByHeight = contentSize.width / contentSize.height;
-//        }
-        
         CGSize scaledSize = self.hotspotContainerView.bounds.size;
-//        if (CGSizeEqualToSize(scaledSize, CGSizeZero))
-//            scaledSize = CGSizeMake(1, 1);
-//        scaledSize.height *= widthByHeight;
+        
+        // if the height goes from 0->[aspect ratio], change the scaled size to be normalized so height == width
+        if (self.hotspotsNormalizedByWidth)
+        {
+            CGSize contentSize = self.intrinsicContentSize;
+            
+            if (contentSize.height != UIViewNoIntrinsicMetric && contentSize.width != UIViewNoIntrinsicMetric && contentSize.width > 0 && contentSize.height > 0)
+            {
+                CGFloat widthByHeight = contentSize.width / contentSize.height;
+                scaledSize.height *= widthByHeight;
+            }
+        }
+        
         
         
         [self.hotspotRectViews enumerateKeysAndObjectsUsingBlock:^(id key, UIView* hotspotView, BOOL *stop) {
@@ -180,6 +183,20 @@
         }];
     }
 }
+
+
+- (NSArray*) hotspotKeysAtPoint:(CGPoint)point
+{
+    NSMutableArray* hitKeys = [NSMutableArray array];
+    [self.hotspotRectViews enumerateKeysAndObjectsUsingBlock:^(id key, UIView* hotspotView, BOOL *stop) {
+        if (CGRectContainsPoint(hotspotView.frame, point))
+        {
+            [hitKeys addObject:key];
+        }
+    }];
+    return hitKeys;
+}
+
 
 #pragma mark - Views
 

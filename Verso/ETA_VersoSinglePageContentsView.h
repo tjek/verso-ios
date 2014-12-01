@@ -14,8 +14,12 @@
 
 @property (nonatomic, assign) BOOL showHotspots;
 - (void) setShowHotspots:(BOOL)showHotspots animated:(BOOL)animated;
+@property (nonatomic, assign) BOOL hotspotsNormalizedByWidth;
+
 
 - (void) addHotspotRects:(NSDictionary*)hotspotRects; //relative to the imageView
 - (void) clearHotspotRects;
+
+- (NSArray*) hotspotKeysAtPoint:(CGPoint)point;
 
 @end

@@ -4,7 +4,7 @@ Pod::Spec.new do |s|
     s.summary      = "A multi-paged image viewer for iOS"
     
     s.homepage     = "https://github.com/eTilbudsavis/ios-verso"
-    s.license      = 'MIT'
+    s.license      = "MIT"
     s.author       = { "Laurie Hufford" => "lh@etilbudsavis.dk" }
     
     s.platform     = :ios, '6.0'
