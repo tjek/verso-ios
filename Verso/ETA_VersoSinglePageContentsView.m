@@ -187,9 +187,24 @@
 
 - (NSArray*) hotspotKeysAtPoint:(CGPoint)point
 {
+    CGSize contentSize = self.hotspotContainerView.bounds.size;
+    
+    if (contentSize.height == UIViewNoIntrinsicMetric || contentSize.width == UIViewNoIntrinsicMetric || contentSize.width <= 0 || contentSize.height <= 0)
+    {
+        return nil;
+    }
+    
+    // normalize the point
+    CGPoint normalizedPoint = (CGPoint){
+        .x = point.x / contentSize.width,
+        .y = point.y / (self.hotspotsNormalizedByWidth ? contentSize.width : contentSize.height)
+    };
+    
+    
     NSMutableArray* hitKeys = [NSMutableArray array];
-    [self.hotspotRectViews enumerateKeysAndObjectsUsingBlock:^(id key, UIView* hotspotView, BOOL *stop) {
-        if (CGRectContainsPoint(hotspotView.frame, point))
+    [self.hotspotRects enumerateKeysAndObjectsUsingBlock:^(id key, NSValue* rectValue, BOOL *stop) {
+        CGRect hotspotRect = rectValue.CGRectValue;
+        if (CGRectContainsPoint(hotspotRect, normalizedPoint))
         {
             [hitKeys addObject:key];
         }

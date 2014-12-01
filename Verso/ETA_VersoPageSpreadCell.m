@@ -520,7 +520,7 @@
 - (ETA_VersoPageSpreadSide) _pageSideForPoint:(CGPoint)point
 {
     ETA_VersoPageSpreadSide pageSide = ETA_VersoPageSpreadSide_Primary;
-    if (self.singlePageMode == NO && point.x > CGRectGetMidY(self.bounds))
+    if (self.singlePageMode == NO && point.x > CGRectGetMidX(self.bounds))
     {
         pageSide = ETA_VersoPageSpreadSide_Secondary;
     }
