@@ -239,7 +239,7 @@
     
     
     [self setNeedsLayout];
-    [UIView animateWithDuration:0.3 animations:^{
+    [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^{
         
         [UIView setAnimationsEnabled:animated];
         
@@ -248,7 +248,7 @@
         [self layoutIfNeeded];
         
         [UIView setAnimationsEnabled:wereAnimationsEnabled];
-    }];
+    } completion:nil];
 }
 
 - (void) setFitToWidth:(BOOL)fitToWidth
@@ -289,14 +289,22 @@
 
 - (void) setPageIndex:(NSInteger)pageIndex forSide:(ETA_VersoPageSpreadSide)pageSide
 {
+    ETA_VersoSinglePageContentsView* pageContentsView = nil;
     switch (pageSide) {
         case ETA_VersoPageSpreadSide_Primary:
+        {
             self.primaryPageIndex = pageIndex;
+            pageContentsView = self.primaryPageContents;
             break;
+        }
         case ETA_VersoPageSpreadSide_Secondary:
+        {
             self.secondaryPageIndex = pageIndex;
+            pageContentsView = self.secondaryPageContents;
             break;
+        }
     }
+    pageContentsView.pageNumberLabel.text = [NSString stringWithFormat:@"%@", @(pageIndex+1)];
 }
 - (NSInteger) pageIndexForSide:(ETA_VersoPageSpreadSide)pageSide
 {
@@ -494,19 +502,6 @@
 
 
 #pragma mark - Tapping Actions
-
-//- (CGPoint) _normalizePoint:(CGPoint)pointToNormalize withinPageContentsView:(ETA_VersoSinglePageContentsView*)pageContentsView
-//{
-//    // convert pointToNormalize (which is relative to the pageContentsView) to hotspot-ratio (width = 1, height = aspectRatio)
-//    CGSize pageContentsSize = pageContentsView.bounds.size;
-//    pointToNormalize.x = pageContentsSize.width != 0 ? pointToNormalize.x / pageContentsSize.width : 0;
-//    pointToNormalize.y = pageContentsSize.height != 0 ? pointToNormalize.y / pageContentsSize.height : 0;
-//    
-////    normalizedPoint
-////    CGPoint normalizedPoint = pageContentsSize.width != 0 ? CGPointMake(pointToNormalize.x / pageContentsSize.width, pointToNormalize.y/pageContentsSize.width) : CGPointZero;
-//    return pointToNormalize;
-//}
-
 
 - (ETA_VersoSinglePageContentsView*) _pageContentsViewForSide:(ETA_VersoPageSpreadSide)pageSide
 {

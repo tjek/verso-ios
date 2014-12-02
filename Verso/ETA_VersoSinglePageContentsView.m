@@ -39,6 +39,7 @@
 
 - (void)addSubviews
 {
+    [self addSubview:self.pageNumberLabel];
     [self addSubview:self.imageView];
     
     [self addSubview:self.hotspotContainerView];
@@ -47,6 +48,14 @@
 - (void)layoutSubviews
 {
     [super layoutSubviews];
+    
+    CGSize maxNumberSize = CGSizeMake(CGRectGetWidth(self.bounds)/3, CGRectGetHeight(self.bounds)/2);
+    CGRect labelFrame = CGRectZero;
+    labelFrame.size = [self.pageNumberLabel sizeThatFits:maxNumberSize];
+    labelFrame.origin = CGPointMake(CGRectGetMidX(self.bounds)-labelFrame.size.width/2,
+                                    CGRectGetMidY(self.bounds)-labelFrame.size.height/2);
+    self.pageNumberLabel.frame = labelFrame;
+    
     
     [self layoutHotspots];
 }
@@ -224,6 +233,25 @@
         _imageView.contentMode = UIViewContentModeScaleAspectFit;
     }
     return _imageView;
+}
+
+
+- (UILabel*) pageNumberLabel
+{
+    if (!_pageNumberLabel)
+    {
+        _pageNumberLabel = [UILabel new];
+        _pageNumberLabel.backgroundColor = [UIColor clearColor];
+        _pageNumberLabel.font = [UIFont boldSystemFontOfSize:100];
+        _pageNumberLabel.minimumScaleFactor = 0.08;
+        _pageNumberLabel.adjustsFontSizeToFitWidth = YES;
+        
+        _pageNumberLabel.alpha = 1.0;
+        [UIView animateWithDuration:1.0 delay:0 options:UIViewAnimationOptionRepeat | UIViewAnimationOptionAutoreverse | UIViewAnimationOptionCurveEaseIn | UIViewAnimationOptionOverrideInheritedDuration animations:^{
+            _pageNumberLabel.alpha = 0.2;
+        } completion:nil];
+    }
+    return _pageNumberLabel;
 }
 
 

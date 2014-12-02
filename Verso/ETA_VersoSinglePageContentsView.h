@@ -11,6 +11,8 @@
 @interface ETA_VersoSinglePageContentsView : UIView
 
 @property (nonatomic, strong) UIImageView* imageView;
+@property (nonatomic, strong) UILabel* pageNumberLabel;
+
 
 @property (nonatomic, assign) BOOL showHotspots;
 - (void) setShowHotspots:(BOOL)showHotspots animated:(BOOL)animated;
