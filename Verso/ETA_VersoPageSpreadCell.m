@@ -289,22 +289,18 @@
 
 - (void) setPageIndex:(NSInteger)pageIndex forSide:(ETA_VersoPageSpreadSide)pageSide
 {
-    ETA_VersoSinglePageContentsView* pageContentsView = nil;
     switch (pageSide) {
         case ETA_VersoPageSpreadSide_Primary:
         {
             self.primaryPageIndex = pageIndex;
-            pageContentsView = self.primaryPageContents;
             break;
         }
         case ETA_VersoPageSpreadSide_Secondary:
         {
             self.secondaryPageIndex = pageIndex;
-            pageContentsView = self.secondaryPageContents;
             break;
         }
     }
-    pageContentsView.pageNumberLabel.text = [NSString stringWithFormat:@"%@", @(pageIndex+1)];
 }
 - (NSInteger) pageIndexForSide:(ETA_VersoPageSpreadSide)pageSide
 {
@@ -336,6 +332,21 @@
             self.isSecondaryImageZoom = isShowingZoomImage;
             break;
     }
+}
+
+- (void) setPageNumberLabelText:(NSAttributedString*)text color:(UIColor*)color forSide:(ETA_VersoPageSpreadSide)pageSide
+{
+    ETA_VersoSinglePageContentsView* pageContentsView = nil;
+    switch (pageSide) {
+        case ETA_VersoPageSpreadSide_Primary:
+            pageContentsView = self.primaryPageContents;
+            break;
+        case ETA_VersoPageSpreadSide_Secondary:
+            pageContentsView = self.secondaryPageContents;
+            break;
+    }
+    pageContentsView.pageNumberLabel.textColor = color;
+    pageContentsView.pageNumberLabel.attributedText = text;
 }
 
 - (void) setImage:(UIImage*)image isZoomImage:(BOOL)isZoomImage forSide:(ETA_VersoPageSpreadSide)pageSide animated:(BOOL)animated

@@ -107,25 +107,15 @@
 
 @optional
 
-/**
- *  What background color to place behind the page image for a specific page
- *
- *  If not implemented, or you return `nil`, the default is for the background to be transparent.
- *
- *  @param versoPagedView   The paged view whose pages will be colored
- *  @param pageIndex         The page index that will be colored (starting at 0)
- *
- *  @return The color to be drawn behind the page image.
- *
- *  @since v1.0
- */
-- (UIColor*) versoPagedView:(ETA_VersoPagedView*)versoPagedView backgroundColorForPageIndex:(NSUInteger)pageIndex;
-
-
 
 // default 3 if not implemented
 - (NSUInteger) versoPagedView:(ETA_VersoPagedView*)versoPagedView numberOfPagesAheadToPrefetch:(NSUInteger)afterPageIndex;
 
+// defaults to the page number (pageIndex+1)
+- (NSAttributedString*) versoPagedView:(ETA_VersoPagedView*)versoPagedView pageNumberLabelStringForPageIndex:(NSUInteger)pageIndex;
+
+// defaults to black
+- (UIColor*) versoPagedView:(ETA_VersoPagedView*)versoPagedView pageNumberLabelColorForPageIndex:(NSUInteger)pageIndex;
 
 
 @end

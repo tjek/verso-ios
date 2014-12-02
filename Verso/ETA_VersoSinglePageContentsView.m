@@ -49,13 +49,19 @@
 {
     [super layoutSubviews];
     
-    CGSize maxNumberSize = CGSizeMake(CGRectGetWidth(self.bounds)/3, CGRectGetHeight(self.bounds)/2);
+    CGFloat maxWidth = CGRectGetWidth(self.bounds)/3;
+    CGSize fittingSize = [self.pageNumberLabel sizeThatFits:CGSizeMake(maxWidth, 999)];
+    if (fittingSize.width > 0 && fittingSize.width > maxWidth)
+    {
+        fittingSize.height *= (maxWidth / fittingSize.width);
+        fittingSize.width = maxWidth;
+    }
+    
     CGRect labelFrame = CGRectZero;
-    labelFrame.size = [self.pageNumberLabel sizeThatFits:maxNumberSize];
+    labelFrame.size = fittingSize;
     labelFrame.origin = CGPointMake(CGRectGetMidX(self.bounds)-labelFrame.size.width/2,
                                     CGRectGetMidY(self.bounds)-labelFrame.size.height/2);
     self.pageNumberLabel.frame = labelFrame;
-    
     
     [self layoutHotspots];
 }
@@ -243,8 +249,10 @@
         _pageNumberLabel = [UILabel new];
         _pageNumberLabel.backgroundColor = [UIColor clearColor];
         _pageNumberLabel.font = [UIFont boldSystemFontOfSize:100];
-        _pageNumberLabel.minimumScaleFactor = 0.08;
+        _pageNumberLabel.textAlignment = NSTextAlignmentCenter;
+        _pageNumberLabel.minimumScaleFactor = 0.01;
         _pageNumberLabel.adjustsFontSizeToFitWidth = YES;
+        _pageNumberLabel.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
         
         _pageNumberLabel.alpha = 1.0;
         [UIView animateWithDuration:1.0 delay:0 options:UIViewAnimationOptionRepeat | UIViewAnimationOptionAutoreverse | UIViewAnimationOptionCurveEaseIn | UIViewAnimationOptionOverrideInheritedDuration animations:^{

@@ -29,6 +29,7 @@ typedef enum : NSUInteger {
 - (void) setPageIndex:(NSInteger)pageIndex forSide:(ETA_VersoPageSpreadSide)pageSide;
 - (NSInteger) pageIndexForSide:(ETA_VersoPageSpreadSide)pageSide;
 
+- (void) setPageNumberLabelText:(NSAttributedString*)text color:(UIColor*)color forSide:(ETA_VersoPageSpreadSide)pageSide;
 
 - (void) setImage:(UIImage*)image isZoomImage:(BOOL)isZoomImage forSide:(ETA_VersoPageSpreadSide)pageSide animated:(BOOL)animated;
 

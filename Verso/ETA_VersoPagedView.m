@@ -255,18 +255,6 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     }
 }
 
-- (UIColor*) backgroundColorAtPageIndex:(NSUInteger)pageIndex
-{
-    UIColor* bgColor = nil;
-    
-    if ([self.delegate respondsToSelector:@selector(versoPagedView:backgroundColorForPageIndex:)])
-    {
-        bgColor = [self.delegate versoPagedView:self backgroundColorForPageIndex:pageIndex];
-    }
-    
-    return bgColor;
-}
-
 - (void) willBeginZooming:(CGFloat)zoomScale
 {
 
@@ -280,6 +268,30 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
 }
 
+- (NSAttributedString*) pageNumberLabelStringForPageIndex:(NSUInteger)pageIndex
+{
+    if ([self.delegate respondsToSelector:@selector(versoPagedView:pageNumberLabelStringForPageIndex:)])
+    {
+        return [self.delegate versoPagedView:self pageNumberLabelStringForPageIndex:pageIndex];
+    }
+    else
+    {
+        return [[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@", @(pageIndex+1)]];
+    }
+}
+
+- (UIColor*) pageNumberLabelColorForPageIndex:(NSUInteger)pageIndex
+{
+    UIColor* color = nil;
+    if ([self.delegate respondsToSelector:@selector(versoPagedView:pageNumberLabelColorForPageIndex:)])
+    {
+        color = [self.delegate versoPagedView:self pageNumberLabelColorForPageIndex:pageIndex];
+    }
+    if (!color)
+        color = [UIColor blackColor];
+    
+    return color;
+}
 
 
 
@@ -405,19 +417,22 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 //        NSLog(@"Prepare PageView %tu-%tu (%@) - item:%tu", firstPageIndex, lastPageIndex, isVisible?@"Visible":@"Hidden", indexPath.item);
     
     
-    // TODO: show 2 different bg colors for each side of a two-up item
-    pageView.backgroundColor = [self backgroundColorAtPageIndex:firstPageIndex];
-    
-    
     [pageView setShowHotspots:showHotspots animated:animated];
     [pageView setHotspotRects:[self hotspotRectsForPageIndex:firstPageIndex] forSide:ETA_VersoPageSpreadSide_Primary normalizedByWidth:[self hotspotsNormalizedByWidthForPageIndex:firstPageIndex]];
     [pageView setPageIndex:firstPageIndex forSide:ETA_VersoPageSpreadSide_Primary];
 
+    [pageView setPageNumberLabelText:[self pageNumberLabelStringForPageIndex:firstPageIndex]
+                               color:[self pageNumberLabelColorForPageIndex:firstPageIndex]
+                             forSide:ETA_VersoPageSpreadSide_Primary];
     
     if (!singlePageMode)
     {
         [pageView setPageIndex:lastPageIndex forSide:ETA_VersoPageSpreadSide_Secondary];
         [pageView setHotspotRects:[self hotspotRectsForPageIndex:lastPageIndex] forSide: ETA_VersoPageSpreadSide_Secondary normalizedByWidth:[self hotspotsNormalizedByWidthForPageIndex:lastPageIndex]];
+        
+        [pageView setPageNumberLabelText:[self pageNumberLabelStringForPageIndex:lastPageIndex]
+                                   color:[self pageNumberLabelColorForPageIndex:lastPageIndex]
+                                 forSide:ETA_VersoPageSpreadSide_Secondary];
     }
     
     
