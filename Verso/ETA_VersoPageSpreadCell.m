@@ -8,8 +8,6 @@
 
 #import "ETA_VersoPageSpreadCell.h"
 
-#import "ETA_ShortTapGestureRecognizer.h"
-
 #import "ETA_VersoSinglePageContentsView.h"
 
 
@@ -56,17 +54,15 @@
 
 - (void)addSubviews
 {
-    
-//    UITapGestureRecognizer* doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTapPageContainer:)];
-    ETA_ShortTapGestureRecognizer* doubleTap = [[ETA_ShortTapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTapPageContainer:)];
-    doubleTap.maxTapDelay = 0.3;
+    // add the gesture recognizers
+    UITapGestureRecognizer* doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTap:)];
     doubleTap.numberOfTapsRequired = 2;
     [self.contentView addGestureRecognizer:doubleTap];
     
-    UILongPressGestureRecognizer* longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongPressPageContainer:)];
+    UILongPressGestureRecognizer* longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongPress:)];
     [self.contentView addGestureRecognizer:longPress];
     
-    UITapGestureRecognizer* tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTapPageContainer:)];
+    UITapGestureRecognizer* tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTap:)];
     [tap requireGestureRecognizerToFail:doubleTap];
     [self.contentView addGestureRecognizer:tap];
     
@@ -122,7 +118,8 @@
     // calculate the max size for a single page image
     CGSize maxPageSize = readerBounds.size;
     if (!singlePageMode)
-        maxPageSize.width /= 2;
+        maxPageSize.width = ceil(maxPageSize.width / 2);
+    
     if (fitToWidth)
         maxPageSize.height = UIViewNoIntrinsicMetric;
     
@@ -157,12 +154,13 @@
     
     if (singlePageMode == NO)
     {
+        // position secondary to the right of primary (-1 to avoid flickering subpixel spine)
+        secondaryFrame.origin.x = floor(CGRectGetMaxX(primaryFrame)-1);
+        
         // increase the container size to fit the second page, if visible
         containerFrame.size.height = MAX(containerFrame.size.height, secondaryFrame.size.height);
-        containerFrame.size.width += secondaryFrame.size.width;
+        containerFrame.size.width = CGRectGetMaxX(secondaryFrame);
         
-        // position secondary to the right of primary
-        secondaryFrame.origin.x = CGRectGetMaxX(primaryFrame);
     }
     
     
@@ -533,7 +531,7 @@
     return pageSide;
 }
 
-- (void) didTapPageContainer:(UITapGestureRecognizer*)tap
+- (void) didTap:(UITapGestureRecognizer*)tap
 {
     if (tap.state != UIGestureRecognizerStateEnded)
         return;
@@ -552,7 +550,7 @@
     }
 }
 
-- (void) didLongPressPageContainer:(UITapGestureRecognizer*)tap
+- (void) didLongPress:(UITapGestureRecognizer*)tap
 {
     if (tap.state != UIGestureRecognizerStateBegan)
         return;
@@ -573,7 +571,7 @@
 
 }
 
-- (void) didDoubleTapPageContainer:(UITapGestureRecognizer*)tap
+- (void) didDoubleTap:(UITapGestureRecognizer*)tap
 {
     if (tap.state != UIGestureRecognizerStateEnded)
         return;
@@ -642,24 +640,6 @@
     if (!_pageContentsContainer)
     {
         _pageContentsContainer = [UIView new];
-        
-//        _pageContentsContainer.backgroundColor = [UIColor colorWithRed:0 green:0 blue:1 alpha:0.5];
-        
-        
-        // Tap and Doubletap
-//        ETA_ShortTapGestureRecognizer* doubleTap = [[ETA_ShortTapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTapPageContainer:)];
-//        doubleTap.maxTapDelay = 0.4;
-//        UITapGestureRecognizer* doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTapPageContainer:)];
-//        doubleTap.numberOfTapsRequired = 2;
-//        [_pageContentsContainer addGestureRecognizer:doubleTap];
-//        
-//        UILongPressGestureRecognizer* longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongPressPageContainer:)];
-//        [_pageContentsContainer addGestureRecognizer:longPress];
-//        
-//        UITapGestureRecognizer* tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTapPageContainer:)];
-//        [tap requireGestureRecognizerToFail:doubleTap];
-//        [_pageContentsContainer addGestureRecognizer:tap];
-        
     }
     return _pageContentsContainer;
 }

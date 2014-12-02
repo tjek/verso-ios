@@ -11,10 +11,10 @@ Verso TODO list
 * Don't fetch/prefetch images for pages when animating to a new page.
 * Animate image appearance
 * Documentation & Cleanup
+* Prioritise image fetching
 
 
 ### Known Issues
 
 * Occasionally scrolling will lock after doing a quick zoom in&out
-* Two-page alignment has pixel rounding error (1/2 pixel visible inbetween pages)
 * When on last page switching from Two page to single page means you scroll to a random page
