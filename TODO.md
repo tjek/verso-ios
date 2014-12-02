@@ -16,5 +16,4 @@ Verso TODO list
 
 ### Known Issues
 
-* Occasionally scrolling will lock after doing a quick zoom in&out
 * When on last page switching from Two page to single page means you scroll to a random page

@@ -11,13 +11,16 @@
 #import "ETA_VersoSinglePageContentsView.h"
 
 
-@interface ETA_VersoPageSpreadCell () <UIScrollViewDelegate>
+@interface ETA_VersoPageSpreadCell () <UIScrollViewDelegate, UIGestureRecognizerDelegate>
 
 @property (nonatomic, assign) BOOL isPrimaryImageZoom;
 @property (nonatomic, assign) NSInteger primaryPageIndex;
 @property (nonatomic, assign) BOOL isSecondaryImageZoom;
 @property (nonatomic, assign) NSInteger secondaryPageIndex;
 
+@property (nonatomic, strong) UITapGestureRecognizer* tapGesture;
+@property (nonatomic, strong) UITapGestureRecognizer* doubleTapGesture;
+@property (nonatomic, strong) UILongPressGestureRecognizer* longPressGesture;
 
 @property (nonatomic, strong) UIScrollView* zoomView;
 
@@ -55,16 +58,21 @@
 - (void)addSubviews
 {
     // add the gesture recognizers
-    UITapGestureRecognizer* doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTap:)];
-    doubleTap.numberOfTapsRequired = 2;
-    [self.contentView addGestureRecognizer:doubleTap];
+    self.doubleTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTap:)];
+    self.doubleTapGesture.delegate = self;
+    self.doubleTapGesture.numberOfTapsRequired = 2;
+    [self.contentView addGestureRecognizer:self.doubleTapGesture];
     
-    UILongPressGestureRecognizer* longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongPress:)];
-    [self.contentView addGestureRecognizer:longPress];
+    self.longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongPress:)];
+    self.longPressGesture.delegate = self;
+    [self.contentView addGestureRecognizer:self.longPressGesture];
     
-    UITapGestureRecognizer* tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTap:)];
-    [tap requireGestureRecognizerToFail:doubleTap];
-    [self.contentView addGestureRecognizer:tap];
+    self.tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTap:)];
+    [self.tapGesture requireGestureRecognizerToFail:self.zoomView.panGestureRecognizer];
+    [self.tapGesture requireGestureRecognizerToFail:self.doubleTapGesture];
+    [self.tapGesture requireGestureRecognizerToFail:self.longPressGesture];
+    self.tapGesture.delegate = self;
+    [self.contentView addGestureRecognizer:self.tapGesture];
     
     
     
@@ -85,6 +93,7 @@
     [self.zoomView setZoomScale:self.zoomView.minimumZoomScale animated:NO];
     [self.zoomView setContentSize:CGSizeZero];
     [self.zoomView setContentOffset:CGPointZero animated:NO];
+    self.zoomView.pinchGestureRecognizer.enabled = YES;
     
     _showHotspots = NO;
     
@@ -384,6 +393,9 @@
     // update the hotspot visibility
     [pageContentsView setShowHotspots:(self.showHotspots && image) animated:animated];
     
+    // enable/disable zooming depending on the images being loaded
+    self.zoomView.pinchGestureRecognizer.enabled = [self allImagesLoaded];
+    
     [self setNeedsLayout];
 }
 
@@ -531,6 +543,27 @@
     return pageSide;
 }
 
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
+{
+    // allow double-tap to happen simultaneously with other gestures
+    if (gestureRecognizer == self.doubleTapGesture)
+    {
+        return YES;
+    }
+    else if (gestureRecognizer == self.tapGesture)
+    {
+        return YES;
+    }
+    else if (gestureRecognizer == self.longPressGesture)
+    {
+        return YES;
+    }
+    else
+    {
+        return NO;
+    }
+}
+
 - (void) didTap:(UITapGestureRecognizer*)tap
 {
     if (tap.state != UIGestureRecognizerStateEnded)
@@ -542,7 +575,7 @@
     ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
     ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
     
-    NSArray* hotspotKeys = [pageContentsView hotspotKeysAtPoint:[tap locationInView:pageContentsView]];
+    NSArray* hotspotKeys = (pageContentsView.imageView.image) ? [pageContentsView hotspotKeysAtPoint:[tap locationInView:pageContentsView]] : nil;
     
     if ([self.delegate respondsToSelector:@selector(versoPageSpread:didReceiveTapAtPoint:onPageSide:hittingHotspotsWithKeys:)])
     {
@@ -576,22 +609,53 @@
     if (tap.state != UIGestureRecognizerStateEnded)
         return;
 
-    // zoomed in - so zoom out again
-    if (self.zoomView.zoomScale > self.zoomView.minimumZoomScale)
-    {
-        [self.zoomView setZoomScale:self.zoomView.minimumZoomScale animated:YES];
-    }
-    // zoomed out - find the rect we want to zoom to
-    else
-    {
-        CGFloat newScale = self.zoomView.maximumZoomScale;
-        
-        //TODO: if doubletap is over a hotspot, get the rect of the hotspot.
+    // no-op if zoom is disabled
+    if (self.zoomView.pinchGestureRecognizer.enabled == NO)
+        return;
+    
+    [self.zoomView.delegate scrollViewWillBeginZooming:self.zoomView withView:[self.zoomView.delegate viewForZoomingInScrollView:self.zoomView]];
 
-        // otherwise, just zoom to the rect
-        CGRect zoomRect = [self _zoomRectForScale:newScale withCenter:[tap locationInView:self.zoomView]];
-        [self.zoomView zoomToRect:zoomRect animated:YES];
+    BOOL zoomingOut = (self.zoomView.zoomScale > self.zoomView.minimumZoomScale);
+    
+    void (^zoomAnimations)() = ^() {
+        // zoomed in - so zoom out again
+        if (zoomingOut)
+        {
+            [self.zoomView setZoomScale:self.zoomView.minimumZoomScale animated:NO];
+        }
+        // zoomed out - find the rect we want to zoom to
+        else
+        {
+            CGFloat newScale = self.zoomView.maximumZoomScale;
+            
+            //TODO: if doubletap is over a hotspot, get the rect of the hotspot.
+            
+            // otherwise, just zoom to the rect
+            CGRect zoomRect = [self _zoomRectForScale:newScale withCenter:[tap locationInView:self.zoomView]];
+            [self.zoomView zoomToRect:zoomRect animated:NO];
+        }
+    };
+    
+    void (^zoomCompletion)(BOOL) = ^(BOOL finished) {
+        [self.zoomView.delegate scrollViewDidEndZooming:self.zoomView withView:[self.zoomView.delegate viewForZoomingInScrollView:self.zoomView]  atScale:self.zoomView.zoomScale];
+    };
+    
+    //ios 7 bouncy anim, if available
+#ifdef NSFoundationVersionNumber_iOS_6_1
+    if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber_iOS_6_1)
+    {
+        NSTimeInterval duration = zoomingOut ? 0.30 : 0.40;
+        CGFloat damping = zoomingOut ? 0.9 : 0.8;
+        CGFloat initialVelocity = zoomingOut ? 0.9 : 0.75;
+        [UIView animateWithDuration:duration delay:0 usingSpringWithDamping:damping initialSpringVelocity:initialVelocity options:UIViewAnimationOptionBeginFromCurrentState animations:zoomAnimations completion:zoomCompletion];
     }
+    else
+#endif
+    {
+        [UIView animateWithDuration:0.2 delay:0 options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionCurveEaseOut animations:zoomAnimations completion:zoomCompletion];
+    }
+    
+    
 }
 
 

@@ -345,7 +345,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 - (void) versoPageSpreadDidEndZooming:(ETA_VersoPageSpreadCell *)pageView
 {
     // dont allow page scrolling when zoomed in
-    BOOL enablePaging = pageView.zoomScale <= 1.2;
+    BOOL enablePaging = pageView.zoomScale <= 1.05;
     if (self.collectionView.scrollEnabled != enablePaging)
     {
 //        NSLog(@"Paging %@", enablePaging ? @"Enabled" : @"Disabled");
@@ -415,6 +415,9 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 //        NSLog(@"Prepare PageView %tu (%@) - item:%tu", firstPageIndex, isVisible?@"Visible":@"Hidden", indexPath.item);
 //    else
 //        NSLog(@"Prepare PageView %tu-%tu (%@) - item:%tu", firstPageIndex, lastPageIndex, isVisible?@"Visible":@"Hidden", indexPath.item);
+    
+    // make sure that the zoomview's panning doesnt block the collectionViews panning (we disable the collection view's scrolling when we are zoomed in)
+    [pageView.zoomView.panGestureRecognizer requireGestureRecognizerToFail:self.collectionView.panGestureRecognizer];
     
     
     [pageView setShowHotspots:showHotspots animated:animated];
