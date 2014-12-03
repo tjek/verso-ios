@@ -12,9 +12,9 @@ Verso TODO list
 * Animate image appearance
 * Documentation & Cleanup
 * Prioritise image fetching
+* If page image width is greater than height, only show 1 page per screen
 
 
 ### Known Issues
 
 * When on last page switching from Two page to single page means you scroll to a random page
-* Push/pop repeatedly with UINavigationController will cause EXC_ARITHMETIC EXC_I386_DIV in _updateCurrentIndexPathAndScrollThere:animated

@@ -13,7 +13,7 @@
 
 // Utilities
 #import <SDWebImage/SDWebImageManager.h>
-
+#import "ETA_VersoHorizontalLayout.h"
 
 @interface ETA_VersoPagedView () <UICollectionViewDelegate, UICollectionViewDataSource, ETA_VersoPageSpreadCellDelegate>
 
@@ -89,8 +89,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 - (void) dealloc
 {
-    self.delegate = nil;
-    self.dataSource = nil;
+    _delegate = nil;
+    _dataSource = nil;
 }
 
 
@@ -609,11 +609,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     if (!_collectionView)
     {
-        UICollectionViewFlowLayout* layout = [UICollectionViewFlowLayout new];
-        layout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
-        layout.minimumInteritemSpacing = 0.0;
-        layout.minimumLineSpacing = 0.0;
-        layout.sectionInset = UIEdgeInsetsZero;
+        ETA_VersoHorizontalLayout* layout = [ETA_VersoHorizontalLayout new];
         
         _collectionView = [[UICollectionView alloc] initWithFrame:self.bounds collectionViewLayout:layout];
         
@@ -656,14 +652,6 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 //    ETA_VersoPageSpreadCell* pageView = (ETA_VersoPageSpreadCell*)cell;
 //    [self.collectionView removeGestureRecognizer:pageView.zoomView.pinchGestureRecognizer];
 //    [self.collectionView removeGestureRecognizer:pageView.zoomView.panGestureRecognizer];
-}
-
--(CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath
-{
-    CGSize maxItemSize = self.collectionView.bounds.size;
-    maxItemSize.height -= self.collectionView.contentInset.top + self.collectionView.contentInset.bottom;
-    maxItemSize.width -= self.collectionView.contentInset.left + self.collectionView.contentInset.right;
-    return maxItemSize;
 }
 
 
