@@ -18,23 +18,50 @@
 
 /**
  *  Whether we show only 1 page on the screen at a time.
- *  Will trigger a reload of the data
+ *  Will trigger a reload of the data.
  */
 @property (nonatomic, assign) BOOL singlePageMode;
+
 
 @property (nonatomic, assign) BOOL showHotspots;
 - (void) setShowHotspots:(BOOL)showHotspots animated:(BOOL)animated;
 
 
-// pageIndex will be clamped within valid number of pages
 
-// the index of the first visible page
+
+/**
+ *  The index (starts at 0) of the currently visible page. 
+ *  If there are two pages visible, this is the index of the first page.
+ */
 @property (nonatomic, assign, readonly) NSUInteger currentPageIndex;
 
+/**
+ *  The range of page indexes that are currently visible. 
+ *  `.location` this is the index of the first visible page (e.g `currentPageIndex`).
+ *  `.length` is the number of visible pages (e.g. 2 if showing two pages)
+ */
+@property (nonatomic, assign, readonly) NSRange visiblePageIndexRange;
+
+/**
+ *  The total number of pages that the datasource provided
+ */
+@property (nonatomic, assign, readonly) NSUInteger numberOfPages;
+
+/**
+ *  The percentage position of the last visible page (0.0 = first page, 1.0 = last page)
+ */
+@property (nonatomic, assign, readonly) CGFloat pageProgress;
+
+
+
+/**
+ *  Scroll the paged view to the specified page index (the first page is index 0).
+ *
+ *  @param pageIndex The page index to scroll to. Will be clamped to the number of pages.
+ *  @param animated  Whether to animate the changing of the page.
+ */
 - (void) goToPageIndex:(NSInteger)pageIndex animated:(BOOL)animated;
 
-
-@property (nonatomic, assign, readonly) NSRange visiblePageIndexRange;
 
 
 /**

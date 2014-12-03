@@ -17,3 +17,4 @@ Verso TODO list
 ### Known Issues
 
 * When on last page switching from Two page to single page means you scroll to a random page
+* Push/pop repeatedly with UINavigationController will cause EXC_ARITHMETIC EXC_I386_DIV in _updateCurrentIndexPathAndScrollThere:animated

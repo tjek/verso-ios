@@ -24,7 +24,7 @@
 @property (nonatomic, strong) NSIndexPath* currentIndexPath; // the indexPath of the currently visible item
 
 @property (nonatomic, assign) NSRange visiblePageIndexRange; // the visible range, based on currentIndex and singlePageMode
-
+@property (nonatomic, assign) CGFloat pageProgress;
 
 @property (nonatomic, strong) UICollectionView* collectionView;
 
@@ -184,13 +184,31 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         NSMakeRange(rangeStart, rangeLength);
     });
     
-
+    [self _updatePageProgress];
     
     // no change, dont update the page range
     if (prevRange.location == self.visiblePageIndexRange.location && prevRange.length == self.visiblePageIndexRange.length)
         return;
     
     [self didChangeVisiblePageIndexRangeFrom:prevRange];
+}
+
+- (void) _updatePageProgress
+{
+    CGFloat percentageComplete = 0;
+    CGFloat numberOfPages = self.numberOfPages;
+    if (numberOfPages == 1)
+    {
+        percentageComplete = 1.0;
+    }
+    else if (numberOfPages > 1)
+    {
+        NSUInteger lastVisiblePageIndex = self.visiblePageIndexRange.location + self.visiblePageIndexRange.length - 1;
+        
+        percentageComplete = (CGFloat)(lastVisiblePageIndex) / (CGFloat)(numberOfPages - 1);
+    }
+
+    self.pageProgress = percentageComplete;
 }
 
 
