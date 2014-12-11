@@ -435,8 +435,10 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 //        NSLog(@"Prepare PageView %tu-%tu (%@) - item:%tu", firstPageIndex, lastPageIndex, isVisible?@"Visible":@"Hidden", indexPath.item);
     
     // make sure that the zoomview's panning doesnt block the collectionViews panning (we disable the collection view's scrolling when we are zoomed in)
-    [pageView.zoomView.panGestureRecognizer requireGestureRecognizerToFail:self.collectionView.panGestureRecognizer];
-    
+    [pageView.zoomView.panGestureRecognizer requireGestureRecognizerToFail:self.collectionView.panGestureRecognizer];    
+    [pageView.contentView.gestureRecognizers enumerateObjectsUsingBlock:^(UIGestureRecognizer* gesture, NSUInteger idx, BOOL *stop) {
+        [gesture requireGestureRecognizerToFail:self.collectionView.panGestureRecognizer];
+    }];
     
     [pageView setShowHotspots:showHotspots animated:animated];
     [pageView setHotspotRects:[self hotspotRectsForPageIndex:firstPageIndex] forSide:ETA_VersoPageSpreadSide_Primary normalizedByWidth:[self hotspotsNormalizedByWidthForPageIndex:firstPageIndex]];
