@@ -116,6 +116,8 @@
 
 @optional
 
+- (void) versoPagedViewStartedChangingVisiblePageIndexRange:(ETA_VersoPagedView *)versoPagedView;
+
 - (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didChangeVisiblePageIndexRangeFrom:(NSRange)previousVisiblePageIndexRange;
 
 - (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didTapLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys;

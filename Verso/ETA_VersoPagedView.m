@@ -227,6 +227,14 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 #pragma mark - Delegate methods
 
+- (void) startedChangingVisiblePageIndexRange
+{
+    if ([self.delegate respondsToSelector:@selector(versoPagedViewStartedChangingVisiblePageIndexRange:)])
+    {
+        [self.delegate versoPagedViewStartedChangingVisiblePageIndexRange:self];
+    }
+}
+
 - (void) didChangeVisiblePageIndexRangeFrom:(NSRange)prevRange
 {
     if ([self.delegate respondsToSelector:@selector(versoPagedView:didChangeVisiblePageIndexRangeFrom:)])
@@ -661,15 +669,24 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     
 }
-
+- (void) scrollViewWillBeginDragging:(UIScrollView *)scrollView
+{
+    [self startedChangingVisiblePageIndexRange];
+}
 - (void) scrollViewDidEndDecelerating:(UIScrollView *)scrollView
 {
     [self _updateCurrentPage];
 }
 
+- (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset
+{
+}
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
+{
+    [self _updateCurrentPage];
+}
 - (void) scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
 {
-
 }
 
 - (void) _updateCurrentPage
