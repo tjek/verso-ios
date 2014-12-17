@@ -30,6 +30,7 @@
 
 @property (nonatomic, strong) SDWebImageManager* cachedImageDownloader;
 
+@property (nonatomic, strong) UIView* outroView;
 
 @end
 
@@ -89,6 +90,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 - (void) dealloc
 {
+    _collectionView.delegate = nil;
+    _collectionView.dataSource = nil;
     _delegate = nil;
     _dataSource = nil;
 }
@@ -105,6 +108,15 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 //    NSLog(@"Reload Pages");
     
     [self _updateNumberOfPagesAndItems];
+    
+    // update the outro view
+    [self.outroView removeFromSuperview];
+    
+    if ([self.delegate respondsToSelector:@selector(outroViewForVersoPagedView:)])
+        self.outroView = [self.delegate outroViewForVersoPagedView:self];
+    else
+        self.outroView = nil;
+    
     
     [self.collectionView reloadData];
     
@@ -319,7 +331,15 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     return color;
 }
 
-
+- (CGFloat) outroWidth
+{
+    CGFloat width = UIViewNoIntrinsicMetric;
+    if ([self.delegate respondsToSelector:@selector(outroWidthForVersoPagedView:)])
+    {
+        width = [self.delegate outroWidthForVersoPagedView:self];
+    }
+    return width;
+}
 
 #pragma mark - Datasource methods
 
@@ -355,8 +375,6 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     }
     return hotspotsNormalizedByWidth;
 }
-
-
 
 
 
@@ -626,6 +644,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         _collectionView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         
         [_collectionView registerClass:ETA_VersoPageSpreadCell.class forCellWithReuseIdentifier:kVersoPageSpreadCellIdentifier];
+        [_collectionView registerClass:UICollectionReusableView.class forSupplementaryViewOfKind:UICollectionElementKindSectionFooter withReuseIdentifier:@"OutroContainerView"];
         
         _collectionView.dataSource = self;
         _collectionView.delegate = self;
@@ -662,6 +681,30 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 //    ETA_VersoPageSpreadCell* pageView = (ETA_VersoPageSpreadCell*)cell;
 //    [self.collectionView removeGestureRecognizer:pageView.zoomView.pinchGestureRecognizer];
 //    [self.collectionView removeGestureRecognizer:pageView.zoomView.panGestureRecognizer];
+}
+
+- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout referenceSizeForFooterInSection:(NSInteger)section
+{
+    if (!self.outroView)
+        return CGSizeZero;
+    
+    return CGSizeMake([self outroWidth], UIViewNoIntrinsicMetric);
+}
+- (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
+{
+    UICollectionReusableView *reusableview = nil;
+    
+    if (kind == UICollectionElementKindSectionFooter)
+    {
+        reusableview = [collectionView dequeueReusableSupplementaryViewOfKind:kind withReuseIdentifier:@"OutroContainerView" forIndexPath:indexPath];
+        
+        self.outroView.frame = reusableview.bounds;
+        self.outroView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        
+        [reusableview addSubview:self.outroView];
+    }
+    
+    return reusableview;
 }
 
 

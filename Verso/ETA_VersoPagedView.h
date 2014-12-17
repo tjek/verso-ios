@@ -146,5 +146,7 @@
 // defaults to black
 - (UIColor*) versoPagedView:(ETA_VersoPagedView*)versoPagedView pageNumberLabelColorForPageIndex:(NSUInteger)pageIndex;
 
+- (UIView*) outroViewForVersoPagedView:(ETA_VersoPagedView*)versoPagedView;
+- (CGFloat) outroWidthForVersoPagedView:(ETA_VersoPagedView*)versoPagedView;
 
 @end
