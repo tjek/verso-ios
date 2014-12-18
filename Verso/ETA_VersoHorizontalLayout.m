@@ -8,12 +8,19 @@
 
 #import "ETA_VersoHorizontalLayout.h"
 
+@interface ETA_VersoHorizontalLayout ()
+
+@property (nonatomic, assign) CGRect oldCollectionViewBounds;
+
+@end
+
 @implementation ETA_VersoHorizontalLayout
 
 - (instancetype) init
 {
     if (self = [super init])
     {
+        _oldCollectionViewBounds = CGRectNull;
         self.scrollDirection = UICollectionViewScrollDirectionHorizontal;
         self.minimumInteritemSpacing = 0.0;
         self.minimumLineSpacing = 0.0;
@@ -37,16 +44,46 @@
     return collectionSize;
 }
 
+
+// invalidate layout if size changed
 - (BOOL)shouldInvalidateLayoutForBoundsChange:(CGRect)newBounds
 {
-    // To avoid the collection view complaining when the content offset is changed before the content inset.
-    // This happens when orientation changes and the containing VC autoamtically adjusts the contentInset
-    if (CGSizeEqualToSize(newBounds.size, self.collectionView.bounds.size))
+    CGRect oldBounds = self.collectionView.bounds;
+    if (!CGSizeEqualToSize(oldBounds.size, newBounds.size))
     {
-        return NO;
+        return YES;
     }
-    
-    BOOL shouldInvalidate = [super shouldInvalidateLayoutForBoundsChange:newBounds];
-    return shouldInvalidate;
+    return NO;
 }
+
+
+// make sure that we always land on the current page spread, based on the bounds we are animating from
+-(CGPoint)targetContentOffsetForProposedContentOffset:(CGPoint)proposedContentOffset
+{
+    CGPoint targetContentOffset = [super targetContentOffsetForProposedContentOffset:proposedContentOffset];
+    
+    if (!CGRectIsNull(self.oldCollectionViewBounds))
+    {
+        NSInteger spreadIndex = ceil(proposedContentOffset.x / self.oldCollectionViewBounds.size.width);
+        
+        targetContentOffset.x = spreadIndex * self.collectionView.bounds.size.width;
+    }
+    return targetContentOffset;
+}
+
+// turn off animations for bounds change, and save the bounds we are animating from
+- (void)prepareForAnimatedBoundsChange:(CGRect)oldBounds
+{
+    self.oldCollectionViewBounds = oldBounds;
+    [UIView setAnimationsEnabled:NO];
+    [super prepareForAnimatedBoundsChange:oldBounds];
+}
+// enable animations again, and invalidate the saved bounds
+- (void) finalizeAnimatedBoundsChange
+{
+    [super finalizeAnimatedBoundsChange];
+    [UIView setAnimationsEnabled:YES];
+    self.oldCollectionViewBounds = CGRectNull;
+}
+
 @end

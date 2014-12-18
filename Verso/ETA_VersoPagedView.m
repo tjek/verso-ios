@@ -19,11 +19,14 @@
 
 
 @property (nonatomic, assign) NSUInteger numberOfPages; // updated from the datasource when the pages are reloaded
-@property (nonatomic, assign) NSUInteger numberOfItems; // based on number of pages, and the single page mode
+@property (nonatomic, assign) NSUInteger numberOfPageSpreads; // based on number of pages, and the single page mode
 
-@property (nonatomic, strong) NSIndexPath* currentIndexPath; // the indexPath of the currently visible item
+@property (nonatomic, assign) NSUInteger currentPageIndex; // the last viewed page index
 
 @property (nonatomic, assign) NSRange visiblePageIndexRange; // the visible range, based on currentIndex and singlePageMode
+
+
+
 @property (nonatomic, assign) CGFloat pageProgress;
 
 @property (nonatomic, strong) UICollectionView* collectionView;
@@ -59,8 +62,9 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     _currentPageIndex = 0;
     _numberOfPages = 0;
+    _numberOfPageSpreads = 0;
     _singlePageMode = YES;
-    
+    _visiblePageIndexRange = NSMakeRange(NSNotFound, 0);
     [self addSubviews];
 }
 
@@ -69,15 +73,20 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     [self addSubview:self.collectionView];
 }
 
+-(void) setBounds:(CGRect)bounds
+{
+    // in order to avoid item size warnings, invalidate the layout before the bounds change
+    [self.collectionView.collectionViewLayout invalidateLayout];
+    
+    [super setBounds:bounds];
+}
+
 - (void) layoutSubviews
 {
-    // invalidate the layout before re-laying out the collection view (to avoid incorrect item size errors)
+    // in order to avoid item size warnings, invalidate the layout before the collection view is layed out
     [self.collectionView.collectionViewLayout invalidateLayout];
     
     [super layoutSubviews];
-    
-    // move back to the visible item
-    [self.collectionView scrollToItemAtIndexPath:self.currentIndexPath atScrollPosition:UICollectionViewScrollPositionLeft | UICollectionViewScrollPositionTop animated:NO];
 }
 
 - (void) didMoveToSuperview
@@ -99,15 +108,148 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 
 
-#pragma mark - Page Count
 
+
+
+
+
+#pragma mark - Public Methods
+
+- (void) setSinglePageMode:(BOOL)singlePageMode
+{
+    [self setSinglePageMode:singlePageMode animated:NO];
+}
+- (void) setSinglePageMode:(BOOL)singlePageMode animated:(BOOL)animated
+{
+    BOOL prevSinglePageMode = _singlePageMode;
+    
+    if (singlePageMode == prevSinglePageMode)
+        return;
+        
+    _singlePageMode = singlePageMode;
+    
+    
+    
+    
+    // move the collection view items around to fit the changes
+    
+    NSUInteger prevSpreadCount = [self _numberOfPageSpreadsForPageCount:self.numberOfPages inSinglePageMode:prevSinglePageMode];
+    NSUInteger prevSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:prevSinglePageMode];
+    
+    NSUInteger currSpreadCount = [self _numberOfPageSpreadsForPageCount:self.numberOfPages inSinglePageMode:singlePageMode];
+    NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:singlePageMode];
+//    NSLog(@"Set singlePageMode %@", @(singlePageMode));
+//    NSLog(@"  - spread   cnt: %@->%@  |  idx:%@->%@", @(prevSpreadCount), @(currSpreadCount), @(prevSpreadIndex), @(currSpreadIndex));
+    
+    self.numberOfPageSpreads = currSpreadCount;
+    
+    
+    // first update the currently visible spread cell
+    [CATransaction begin]; {
+        
+        ETA_VersoPageSpreadCell* spreadView = [self _cellForPageSpreadIndex:prevSpreadIndex];
+        [self _preparePageView:spreadView atSpreadIndex:currSpreadIndex animated:animated];
+        
+    } [CATransaction commit];
+    
+
+    
+    // move the cells around - dont animate this
+    BOOL animsEnabled = [UIView areAnimationsEnabled];
+    [UIView setAnimationsEnabled:NO];
+    
+    [self.collectionView performBatchUpdates:^{
+        
+        // insert or remove page spreads, and move the currently visible one
+        if (currSpreadCount > prevSpreadCount)
+        {
+            NSMutableArray* indexPathsToInsert = [NSMutableArray array];
+            
+            // add indexes to the end
+            for (NSUInteger i = prevSpreadCount; i < currSpreadCount; i++)
+            {
+                [indexPathsToInsert addObject:[NSIndexPath indexPathForRow:i inSection:0]];
+            }
+            
+            [self.collectionView insertItemsAtIndexPaths:indexPathsToInsert];
+            [self.collectionView moveItemAtIndexPath:[NSIndexPath indexPathForItem:prevSpreadIndex inSection:0]
+                                         toIndexPath:[NSIndexPath indexPathForItem:currSpreadIndex inSection:0]];
+        }
+        else if (currSpreadCount < prevSpreadCount)
+        {
+            NSMutableArray* indexPathsToDelete = [NSMutableArray array];
+            for (NSUInteger i = currSpreadCount; i < prevSpreadCount; i++)
+            {
+                [indexPathsToDelete addObject:[NSIndexPath indexPathForRow:i inSection:0]];
+            }
+            
+            [self.collectionView moveItemAtIndexPath:[NSIndexPath indexPathForItem:prevSpreadIndex inSection:0]
+                                         toIndexPath:[NSIndexPath indexPathForItem:currSpreadIndex inSection:0]];
+            
+            [self.collectionView deleteItemsAtIndexPaths:indexPathsToDelete];
+        }
+    } completion:^(BOOL finished) {
+        // TODO: fix strange flicker when items spread count get smaller - no cell visible when breaking in completion block
+        [self.collectionView flashScrollIndicators];
+    }];
+    
+    [UIView setAnimationsEnabled:animsEnabled];
+    
+    
+    // make sure the current cell is visible
+    [self _showPageSpreadAtIndex:currSpreadIndex animated:NO];
+    
+    // update the visiblePageRange & pageProgress, and notify
+    [self _updateCurrentPagePropertiesAndNotify];
+}
 
 
 - (void) reloadPages
 {
-//    NSLog(@"Reload Pages");
+//    NSUInteger prevPageCount = self.numberOfPages;
     
-    [self _updateNumberOfPagesAndItems];
+    // get the number of pages from the datasource
+    NSUInteger numberOfPages = 0;
+    if ([self.dataSource respondsToSelector:@selector(numberOfPagesInVersoPagedView:)])
+    {
+        numberOfPages = [self.dataSource numberOfPagesInVersoPagedView:self];
+    }
+    self.numberOfPages = numberOfPages;
+    
+    
+    // update the spread count, and reload all the spreads
+    
+//    NSUInteger prevSpreadCount = self.numberOfPageSpreads;
+    NSUInteger currSpreadCount = [self _numberOfPageSpreadsForPageCount:self.numberOfPages inSinglePageMode:self.singlePageMode];
+    self.numberOfPageSpreads = currSpreadCount;
+    
+    
+    // current page is outside of the new page range - go back to the beginning
+    if (self.currentPageIndex >= self.numberOfPages)
+        self.currentPageIndex = 0;
+
+//    NSLog(@"Reload Pages");
+//    NSLog(@"  - pages: %@->%@  |  spreads: %@->%@", @(prevPageCount), @(self.numberOfPages), @(prevSpreadCount), @(currSpreadCount));
+    
+    
+    [self.collectionView reloadData];
+    
+    
+    
+    // go to the current spread
+    NSUInteger currSpreadIndex = self.numberOfPageSpreads > 0 ? [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:self.singlePageMode] : NSNotFound;
+    [self _showPageSpreadAtIndex:currSpreadIndex animated:NO];
+    
+    
+    
+    // update the visiblePageRange & pageProgress, and notify
+    [self _updateCurrentPagePropertiesAndNotify];
+    
+    
+    // make sure scrolling is enabled again
+    self.collectionView.scrollEnabled = YES;
+    
+    
     
     // update the outro view
     [self.outroView removeFromSuperview];
@@ -116,38 +258,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         self.outroView = [self.delegate outroViewForVersoPagedView:self];
     else
         self.outroView = nil;
-    
-    
-    [self.collectionView reloadData];
-    
-    [self _updateCurrentIndexPathAndScrollThere:YES animated:NO];
-    
-    self.collectionView.scrollEnabled = YES;
-    
-    //TODO: animate the single page mode property on the
 }
 
-
-- (void) _updateNumberOfPagesAndItems
-{
-    NSUInteger numberOfPages = 0;
-    if ([self.dataSource respondsToSelector:@selector(numberOfPagesInVersoPagedView:)])
-    {
-        numberOfPages = [self.dataSource numberOfPagesInVersoPagedView:self];
-    }
-    
-    self.numberOfPages = numberOfPages;
-    
-    
-    // update number of items
-    NSUInteger numberOfItems = numberOfPages;
-    if (!self.singlePageMode && numberOfPages != 0)
-    {
-        // round down to the even page count, and subtract 1
-        numberOfItems = (numberOfPages-(numberOfPages%2) + 2) / 2;
-    }
-    self.numberOfItems = numberOfItems;
-}
 
 
 - (void) goToPageIndex:(NSInteger)pageIndex animated:(BOOL)animated
@@ -155,72 +267,18 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     // clamp pageIndex
     pageIndex = MAX(0, pageIndex);
     pageIndex = MIN(pageIndex, MAX(0, (NSInteger)self.numberOfPages-1));
-
+    
     _currentPageIndex = pageIndex;
     
-    [self _updateCurrentIndexPathAndScrollThere:YES animated:animated];
-}
-
-
-- (void) _updateCurrentIndexPathAndScrollThere:(BOOL)scroll animated:(BOOL)animated
-{
-    NSIndexPath* prevIndexPath = self.currentIndexPath;
-    self.currentIndexPath = [self _indexPathForPageIndex:self.currentPageIndex];
     
-    if (scroll && self.currentIndexPath && (!prevIndexPath || [prevIndexPath compare:self.currentIndexPath] != NSOrderedSame))
-    {
-//        NSLog(@"Scrolling");
-        //TODO: avoid fetching images while animating scroll
-        [self.collectionView scrollToItemAtIndexPath:self.currentIndexPath atScrollPosition:UICollectionViewScrollPositionCenteredVertically | UICollectionViewScrollPositionCenteredHorizontally animated:animated];
-    }
-}
-
-- (void) setCurrentIndexPath:(NSIndexPath *)currentIndexPath
-{
-    _currentIndexPath = currentIndexPath;
+    // go to the current spread
+    NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:self.singlePageMode];
+    [self _showPageSpreadAtIndex:currSpreadIndex animated:animated];
     
     
-    // update the visible range
-    NSRange prevRange = self.visiblePageIndexRange;
     
-    self.visiblePageIndexRange = ({
-        NSUInteger rangeLength = 0;
-        NSUInteger rangeStart = 0;
-        if (_currentIndexPath)
-        {
-            NSUInteger firstPageIndex = [self _firstPageIndexForIndexPath:_currentIndexPath];
-            NSUInteger lastPageIndex = [self _lastPageIndexForIndexPath:_currentIndexPath];
-            rangeLength = (lastPageIndex - firstPageIndex) + 1;
-            rangeStart = firstPageIndex;
-        }
-        NSMakeRange(rangeStart, rangeLength);
-    });
-    
-    [self _updatePageProgress];
-    
-    // no change, dont update the page range
-    if (prevRange.location == self.visiblePageIndexRange.location && prevRange.length == self.visiblePageIndexRange.length)
-        return;
-    
-    [self didChangeVisiblePageIndexRangeFrom:prevRange];
-}
-
-- (void) _updatePageProgress
-{
-    CGFloat percentageComplete = 0;
-    CGFloat numberOfPages = self.numberOfPages;
-    if (numberOfPages == 1)
-    {
-        percentageComplete = 1.0;
-    }
-    else if (numberOfPages > 1)
-    {
-        NSUInteger lastVisiblePageIndex = self.visiblePageIndexRange.location + self.visiblePageIndexRange.length - 1;
-        
-        percentageComplete = (CGFloat)(lastVisiblePageIndex) / (CGFloat)(numberOfPages - 1);
-    }
-
-    self.pageProgress = percentageComplete;
+    // update the visiblePageRange & pageProgress, and notify
+    [self _updateCurrentPagePropertiesAndNotify];
 }
 
 
@@ -228,13 +286,228 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     [self setShowHotspots:showHotspots animated:NO];
 }
+
 - (void) setShowHotspots:(BOOL)showHotspots animated:(BOOL)animated
 {
     _showHotspots = showHotspots;
     
-    ETA_VersoPageSpreadCell* pageSpread = (ETA_VersoPageSpreadCell*)[self.collectionView cellForItemAtIndexPath:self.currentIndexPath];
+    ETA_VersoPageSpreadCell* pageSpread = [self _currentPageSpreadCell];
     [pageSpread setShowHotspots:showHotspots animated:animated];
 }
+
+
+
+
+
+
+
+#pragma mark - Private Methods
+
+
+#pragma mark Page/Spread conversion utilities (Stateless)
+
+- (NSUInteger) _numberOfPageSpreadsForPageCount:(NSUInteger)pageCount inSinglePageMode:(BOOL)singlePageMode
+{
+    // update number of items
+    NSUInteger spreadCount = pageCount;
+    if (!singlePageMode && pageCount != 0)
+    {
+        // round down to the even page count, and subtract 1
+        spreadCount = (pageCount-(pageCount%2) + 2) / 2;
+    }
+    
+    return spreadCount;
+}
+
+- (NSUInteger) _pageSpreadIndexForPageIndex:(NSUInteger)pageIndex inSinglePageMode:(BOOL)singlePageMode
+{
+    if (pageIndex == NSNotFound)
+        return NSNotFound;
+    
+    NSInteger spreadIndex = pageIndex;
+    
+    if (!singlePageMode)
+    {
+        // round up to the even page index (0->0, 1->2, 2->2, 3->4 ...), and halve
+        spreadIndex = (pageIndex + (pageIndex % 2)) / 2.0;
+    }
+    return spreadIndex;
+}
+
+- (BOOL) _isPageIndexVerso:(NSInteger)pageIndex
+{
+    // 0 = recto
+    return (pageIndex % 2) == 1;
+}
+
+- (NSUInteger) _pageIndexForPageSpreadIndex:(NSInteger)spreadIndex versoSide:(BOOL)versoSide inSinglePageMode:(BOOL)singlePageMode withPageCount:(NSUInteger)pageCount
+{
+    if (spreadIndex == NSNotFound || spreadIndex < 0)
+        return NSNotFound;
+    
+    NSInteger pageIndex = spreadIndex;
+    if (!singlePageMode)
+    {
+        pageIndex *= 2;
+        if (versoSide)
+            pageIndex--;
+    }
+    
+    if (pageIndex >= 0 && pageIndex < pageCount && [self _isPageIndexVerso:pageIndex] == versoSide)
+        return pageIndex;
+    else
+        return NSNotFound;
+}
+
+- (NSRange) _pageIndexRangeForPageSpreadIndex:(NSInteger)spreadIndex inSinglePageMode:(BOOL)singlePageMode withPageCount:(NSUInteger)pageCount
+{
+    NSUInteger versoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:YES inSinglePageMode:singlePageMode withPageCount:pageCount];
+    NSUInteger rectoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:NO inSinglePageMode:singlePageMode withPageCount:pageCount];
+    
+    NSUInteger rangeLength;
+    if (versoPageIndex != NSNotFound && rectoPageIndex != NSNotFound)
+    {
+        rangeLength = (rectoPageIndex - versoPageIndex) + 1;
+    }
+    else if (versoPageIndex != NSNotFound || rectoPageIndex != NSNotFound)
+    {
+        rangeLength = 1;
+    }
+    else
+    {
+        rangeLength = 0;
+    }
+    
+    
+    NSUInteger rangeStart;
+    if (versoPageIndex != NSNotFound)
+    {
+        rangeStart = versoPageIndex;
+    }
+    else if (rectoPageIndex != NSNotFound)
+    {
+        rangeStart = rectoPageIndex;
+    }
+    else
+    {
+        rangeStart = NSNotFound;
+    }
+    
+    return NSMakeRange(rangeStart, rangeLength);
+}
+
+
+
+
+
+#pragma mark Collection View Methods
+
+// scroll the specified spread into view
+- (void) _showPageSpreadAtIndex:(NSUInteger)spreadIndex animated:(BOOL)animated
+{
+    if (spreadIndex == NSNotFound || spreadIndex >= self.numberOfPageSpreads)
+        return;
+    
+    [self.collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:spreadIndex inSection:0]
+                                atScrollPosition:UICollectionViewScrollPositionCenteredVertically | UICollectionViewScrollPositionCenteredHorizontally
+                                        animated:animated];
+}
+
+// get the spread cell at the specified index
+- (ETA_VersoPageSpreadCell*) _cellForPageSpreadIndex:(NSUInteger)spreadIndex
+{
+    ETA_VersoPageSpreadCell* pageSpread = (ETA_VersoPageSpreadCell*)[self.collectionView cellForItemAtIndexPath:[NSIndexPath indexPathForItem:spreadIndex inSection:0]];
+    
+    return pageSpread;
+}
+
+// get the spread cell for the current page index
+- (ETA_VersoPageSpreadCell*) _currentPageSpreadCell
+{
+    NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:self.singlePageMode];
+    return [self _cellForPageSpreadIndex:currSpreadIndex];
+}
+
+- (NSRange) _pageIndexRangeAtViewCenter
+{
+    CGPoint centerPoint = [self.collectionView.superview convertPoint:self.collectionView.center toView:self.collectionView];
+    
+    // indexpath of the item in the center of the screen
+    NSIndexPath* spreadIndexPath = [self.collectionView indexPathForItemAtPoint:centerPoint];
+    NSUInteger spreadIndex = spreadIndexPath ? spreadIndexPath.item : NSNotFound;
+    
+    NSRange pageRange = [self _pageIndexRangeForPageSpreadIndex:spreadIndex inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
+    
+    return pageRange;
+}
+
+
+
+
+
+
+#pragma mark - Property Updaters
+
+- (void) _updateCurrentPagePropertiesAndNotify
+{
+    NSRange prevPageIndexRange = self.visiblePageIndexRange;
+    
+    
+    // update the visiblePageRange based on the current spread
+    NSUInteger currSpreadIndex = self.numberOfPageSpreads > 0 ? [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:self.singlePageMode] : NSNotFound;
+    self.visiblePageIndexRange = [self _pageIndexRangeForPageSpreadIndex:currSpreadIndex inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
+
+    
+    // update the pageProgress
+    CGFloat percentageComplete = 0;
+    CGFloat numberOfPages = self.numberOfPages;
+    if (numberOfPages == 1)
+    {
+        percentageComplete = 1.0;
+    }
+    else if (numberOfPages > 1 && self.visiblePageIndexRange.location != NSNotFound)
+    {
+        NSUInteger lastVisiblePageIndex = self.visiblePageIndexRange.location + self.visiblePageIndexRange.length - 1;
+        
+        percentageComplete = (CGFloat)(lastVisiblePageIndex) / (CGFloat)(numberOfPages - 1);
+    }
+    self.pageProgress = percentageComplete;
+    
+    
+    if (prevPageIndexRange.location != self.visiblePageIndexRange.location ||
+        prevPageIndexRange.length != self.visiblePageIndexRange.length)
+    {
+        [self didChangeVisiblePageIndexRangeFrom:prevPageIndexRange];
+    }
+}
+
+
+// get the page range that is at the center if the screen.
+// If the currentPageIndex is not in that range then update & notify
+- (void) _updateCurrentPageIndexIfChanged
+{
+    NSRange pageRange = [self _pageIndexRangeAtViewCenter];
+    
+    // no valid visible pages - in outro?
+    if (pageRange.location == NSNotFound || pageRange.length == 0)
+    {
+        return;
+    }
+    
+    // the current visible page isnt in the new visible page - something changed!
+    if (NSLocationInRange(self.currentPageIndex, pageRange) == NO)
+    {
+        self.currentPageIndex = pageRange.location;
+        
+        // update the visiblePageRange & pageProgress, and notify
+        [self _updateCurrentPagePropertiesAndNotify];
+    }
+}
+
+
+
+
+
 
 
 #pragma mark - Delegate methods
@@ -439,17 +712,20 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 
 
+
+
 #pragma mark - Page View initialization
 
 // update a pageView to show the pages at indexPath
-- (void) _preparePageView:(ETA_VersoPageSpreadCell*)pageView atIndexPath:(NSIndexPath*)indexPath
+- (void) _preparePageView:(ETA_VersoPageSpreadCell*)pageView atSpreadIndex:(NSUInteger)spreadIndex animated:(BOOL)animated
 {
-    NSUInteger firstPageIndex = [self _firstPageIndexForIndexPath:indexPath];
-    NSUInteger lastPageIndex = [self _lastPageIndexForIndexPath:indexPath];
- 
-//    BOOL isVisible = firstPageIndex == self.currentPageIndex || lastPageIndex == self.currentPageIndex;
+    NSUInteger versoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:YES inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
+    NSUInteger rectoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:NO inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
     
-    BOOL animated = NO;
+    
+    NSUInteger firstPageIndex = versoPageIndex == NSNotFound ? rectoPageIndex : versoPageIndex;
+    NSUInteger lastPageIndex = rectoPageIndex == NSNotFound ? versoPageIndex : rectoPageIndex;
+ 
     
     BOOL singlePageMode = firstPageIndex == lastPageIndex;
     BOOL fitToWidth = NO;
@@ -467,8 +743,13 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     }];
     
     [pageView setShowHotspots:showHotspots animated:animated];
-    [pageView setHotspotRects:[self hotspotRectsForPageIndex:firstPageIndex] forSide:ETA_VersoPageSpreadSide_Primary normalizedByWidth:[self hotspotsNormalizedByWidthForPageIndex:firstPageIndex]];
-    [pageView setPageIndex:firstPageIndex forSide:ETA_VersoPageSpreadSide_Primary];
+    [pageView setHotspotRects:[self hotspotRectsForPageIndex:firstPageIndex]
+                      forSide:ETA_VersoPageSpreadSide_Primary
+            normalizedByWidth:[self hotspotsNormalizedByWidthForPageIndex:firstPageIndex]];
+    
+    
+    [pageView setPageIndex:firstPageIndex
+                   forSide:ETA_VersoPageSpreadSide_Primary];
 
     [pageView setPageNumberLabelText:[self pageNumberLabelStringForPageIndex:firstPageIndex]
                                color:[self pageNumberLabelColorForPageIndex:firstPageIndex]
@@ -477,7 +758,9 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     if (!singlePageMode)
     {
         [pageView setPageIndex:lastPageIndex forSide:ETA_VersoPageSpreadSide_Secondary];
-        [pageView setHotspotRects:[self hotspotRectsForPageIndex:lastPageIndex] forSide: ETA_VersoPageSpreadSide_Secondary normalizedByWidth:[self hotspotsNormalizedByWidthForPageIndex:lastPageIndex]];
+        [pageView setHotspotRects:[self hotspotRectsForPageIndex:lastPageIndex]
+                          forSide: ETA_VersoPageSpreadSide_Secondary
+                normalizedByWidth:[self hotspotsNormalizedByWidthForPageIndex:lastPageIndex]];
         
         [pageView setPageNumberLabelText:[self pageNumberLabelStringForPageIndex:lastPageIndex]
                                    color:[self pageNumberLabelColorForPageIndex:lastPageIndex]
@@ -488,7 +771,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     [pageView setSinglePageMode:singlePageMode animated:animated];
     [pageView setFitToWidth:fitToWidth animated:animated];
     
-    [self _startFetchingImagesForPageView:pageView atIndexPath:indexPath zoomImage:NO];
+    [self _startFetchingImagesForPageView:pageView atIndexPath:[NSIndexPath indexPathForItem:spreadIndex inSection:0] zoomImage:NO];
     
     pageView.delegate = self;
 }
@@ -498,8 +781,9 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     if (!pageView)
     {
-        NSIndexPath* indexPath = [self _indexPathForPageIndex:pageIndex];
-        pageView = (ETA_VersoPageSpreadCell*)[self.collectionView cellForItemAtIndexPath:indexPath];
+        NSUInteger spreadIndex = [self _pageSpreadIndexForPageIndex:pageIndex inSinglePageMode:self.singlePageMode];
+        
+        pageView = [self _cellForPageSpreadIndex:spreadIndex];
         if (!pageView)
         {
             //            NSLog(@"[ImgDL] Page %tu No Pageview to update", pageIndex);
@@ -539,98 +823,6 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 
 
-#pragma mark - Page <-> Collection Conversions
-
-- (void) setSinglePageMode:(BOOL)singlePageMode
-{
-    [self setSinglePageMode:singlePageMode animated:NO];
-}
-- (void) setSinglePageMode:(BOOL)singlePageMode animated:(BOOL)animated
-{
-    if (_singlePageMode == singlePageMode)
-        return;
-    
-    _singlePageMode = singlePageMode;
-    
-    [self reloadPages];
-}
-
-
-- (BOOL) _showTwoPagesForIndexPath:(NSIndexPath*)indexPath
-{
-    if (self.singlePageMode)
-    {
-        return NO;
-    }
-    
-    // first page - always single
-    if (indexPath.item == 0)
-    {
-        return NO;
-    }
-    
-    NSUInteger pageCount = [self numberOfPages];
-    // even numbered list of pages
-    if (pageCount % 2 == 0)
-    {
-        // and it's the last item
-        NSUInteger itemCount = self.numberOfItems;
-        if (indexPath.item == itemCount-1)
-            return NO;
-    }
-        
-    return YES;
-}
-
-
-
-- (NSIndexPath*) _indexPathForPageIndex:(NSUInteger)pageIndex
-{
-    NSInteger itemIndex = pageIndex;
-    NSInteger sectionIndex = 0;
-    
-    if (!self.singlePageMode)
-    {
-        // round up to the even page index (0->0, 1->2, 2->2, 3->4 ...), and halve
-        itemIndex = (pageIndex + (pageIndex % 2)) / 2.0;
-    }
-
-    if (itemIndex >= self.numberOfItems)
-        return nil;
-    else
-        return [NSIndexPath indexPathForItem:itemIndex inSection:sectionIndex];
-}
-
-- (NSUInteger) _firstPageIndexForIndexPath:(NSIndexPath*)indexPath
-{
-    if (!self.singlePageMode)
-    {
-        NSInteger lastPageIndex = (indexPath.item * 2);
-        
-        return MAX(lastPageIndex-1, 0);
-    }
-    else
-    {
-        return indexPath.item;
-    }
-}
-
-- (NSUInteger) _lastPageIndexForIndexPath:(NSIndexPath*)indexPath
-{
-    if (!self.singlePageMode)
-    {
-        NSInteger lastPageIndex = (indexPath.item * 2);
-        NSInteger pageCount = [self numberOfPages];
-        
-        return MIN(lastPageIndex, MAX(pageCount-1, 0));
-    }
-    else
-    {
-        return indexPath.item;
-    }
-}
-
-
 #pragma mark - Collection View
 
 - (UICollectionView*) collectionView
@@ -657,30 +849,16 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
 {
-    return self.numberOfItems;
+    return self.numberOfPageSpreads;
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
     ETA_VersoPageSpreadCell* pageView = [collectionView dequeueReusableCellWithReuseIdentifier:kVersoPageSpreadCellIdentifier forIndexPath:indexPath];
     
-    [self _preparePageView:pageView atIndexPath:indexPath];
+    [self _preparePageView:pageView atSpreadIndex:indexPath.item animated:NO];
     
-    // Possible fix to locked scrolling after zoom (though doesnt seem to work
-//    [self.collectionView addGestureRecognizer:pageView.zoomView.pinchGestureRecognizer];
-//    [self.collectionView addGestureRecognizer:pageView.zoomView.panGestureRecognizer];
-
     return pageView;
-}
-
-- (void)collectionView:(UICollectionView *)collectionView willDisplayCell:(UICollectionViewCell *)cell forItemAtIndexPath:(NSIndexPath *)indexPath
-{
-}
-- (void)collectionView:(UICollectionView *)collectionView didEndDisplayingCell:(UICollectionViewCell *)cell forItemAtIndexPath:(NSIndexPath *)indexPath
-{
-//    ETA_VersoPageSpreadCell* pageView = (ETA_VersoPageSpreadCell*)cell;
-//    [self.collectionView removeGestureRecognizer:pageView.zoomView.pinchGestureRecognizer];
-//    [self.collectionView removeGestureRecognizer:pageView.zoomView.panGestureRecognizer];
 }
 
 - (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout referenceSizeForFooterInSection:(NSInteger)section
@@ -690,6 +868,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     return CGSizeMake([self outroWidth], UIViewNoIntrinsicMetric);
 }
+
 - (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
 {
     UICollectionReusableView *reusableview = nil;
@@ -718,7 +897,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 }
 - (void) scrollViewDidEndDecelerating:(UIScrollView *)scrollView
 {
-    [self _updateCurrentPage];
+    [self _updateCurrentPageIndexIfChanged];
 }
 
 - (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset
@@ -726,26 +905,15 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 }
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
 {
-    [self _updateCurrentPage];
+    [self _updateCurrentPageIndexIfChanged];
 }
 - (void) scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
 {
 }
 
-- (void) _updateCurrentPage
-{
-    CGPoint centerPoint = [self.collectionView.superview convertPoint:self.collectionView.center toView:self.collectionView];
-    
-    // indexpath of the item in the center of the screen
-    NSIndexPath* visibleIndexPath = [self.collectionView indexPathForItemAtPoint:centerPoint];
-    
-    // index path changed - changed page index
-    if (visibleIndexPath && (!self.currentIndexPath  || [visibleIndexPath compare:self.currentIndexPath] != NSOrderedSame))
-    {
-        self.currentIndexPath = visibleIndexPath;
-        [self goToPageIndex:[self _firstPageIndexForIndexPath:visibleIndexPath] animated:NO];
-    }
-}
+
+
+
 
 
 #pragma mark - Image Downloader
@@ -803,8 +971,14 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     if (!indexPath)
         return;
     
-    NSUInteger firstPageIndex = [self _firstPageIndexForIndexPath:indexPath];
-    NSUInteger lastPageIndex = [self _lastPageIndexForIndexPath:indexPath];
+    NSUInteger spreadIndex = indexPath.item;
+    
+    NSUInteger versoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:YES inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
+    NSUInteger rectoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:NO inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
+    
+    NSUInteger firstPageIndex = versoPageIndex == NSNotFound ? rectoPageIndex : versoPageIndex;
+    NSUInteger lastPageIndex = rectoPageIndex == NSNotFound ? versoPageIndex : rectoPageIndex;
+    
     
     BOOL twoPages = firstPageIndex!=lastPageIndex;
 

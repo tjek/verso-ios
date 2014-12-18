@@ -21,6 +21,8 @@
  *  Will trigger a reload of the data.
  */
 @property (nonatomic, assign) BOOL singlePageMode;
+- (void) setSinglePageMode:(BOOL)singlePageMode animated:(BOOL)animated;
+
 
 
 @property (nonatomic, assign) BOOL showHotspots;
