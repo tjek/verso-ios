@@ -23,11 +23,10 @@
 
 @property (nonatomic, assign) NSUInteger currentPageIndex; // the last viewed page index
 
-@property (nonatomic, assign) NSRange visiblePageIndexRange; // the visible range, based on currentIndex and singlePageMode
 
+@property (nonatomic, assign) NSRange previousVisiblePageRange;
+@property (nonatomic, assign) NSRange pageRangeAtCenter;
 
-
-@property (nonatomic, assign) CGFloat pageProgress;
 
 @property (nonatomic, strong) UICollectionView* collectionView;
 
@@ -64,7 +63,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     _numberOfPages = 0;
     _numberOfPageSpreads = 0;
     _singlePageMode = YES;
-    _visiblePageIndexRange = NSMakeRange(NSNotFound, 0);
+    _previousVisiblePageRange = NSMakeRange(NSNotFound, 0);
+    
     [self addSubviews];
 }
 
@@ -199,8 +199,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     // make sure the current cell is visible
     [self _showPageSpreadAtIndex:currSpreadIndex animated:NO];
     
-    // update the visiblePageRange & pageProgress, and notify
-    [self _updateCurrentPagePropertiesAndNotify];
+    // report that page range changed
+    [self _finishedPossiblyChangingVisiblePageRange];
 }
 
 
@@ -242,8 +242,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     
     
-    // update the visiblePageRange & pageProgress, and notify
-    [self _updateCurrentPagePropertiesAndNotify];
+    // report that page range changed
+    [self _finishedPossiblyChangingVisiblePageRange];
     
     
     // make sure scrolling is enabled again
@@ -277,8 +277,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     
     
-    // update the visiblePageRange & pageProgress, and notify
-    [self _updateCurrentPagePropertiesAndNotify];
+    // report that page range changed
+    [self _finishedPossiblyChangingVisiblePageRange];
 }
 
 
@@ -297,7 +297,30 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 
 
+- (NSRange) visiblePageIndexRange
+{
+    return [self _pageIndexRangeAtViewCenter];
+}
 
+- (CGFloat) pageProgress
+{
+    NSRange pageRange = [self visiblePageIndexRange];
+    
+    // update the pageProgress
+    CGFloat percentageComplete = 0;
+    CGFloat numberOfPages = self.numberOfPages;
+    if (numberOfPages == 1)
+    {
+        percentageComplete = 1.0;
+    }
+    else if (numberOfPages > 1 && pageRange.location != NSNotFound)
+    {
+        NSUInteger lastVisiblePageIndex = pageRange.location + pageRange.length - 1;
+        
+        percentageComplete = (CGFloat)(lastVisiblePageIndex) / (CGFloat)(numberOfPages - 1);
+    }
+    return percentageComplete;
+}
 
 
 
@@ -428,17 +451,21 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     return [self _cellForPageSpreadIndex:currSpreadIndex];
 }
 
-- (NSRange) _pageIndexRangeAtViewCenter
+- (NSRange) _pageIndexRangeAtPoint:(CGPoint)pointToCheck
 {
-    CGPoint centerPoint = [self.collectionView.superview convertPoint:self.collectionView.center toView:self.collectionView];
-    
-    // indexpath of the item in the center of the screen
-    NSIndexPath* spreadIndexPath = [self.collectionView indexPathForItemAtPoint:centerPoint];
+    NSIndexPath* spreadIndexPath = [self.collectionView indexPathForItemAtPoint:pointToCheck];
     NSUInteger spreadIndex = spreadIndexPath ? spreadIndexPath.item : NSNotFound;
     
     NSRange pageRange = [self _pageIndexRangeForPageSpreadIndex:spreadIndex inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
     
     return pageRange;
+}
+
+- (NSRange) _pageIndexRangeAtViewCenter
+{
+    CGPoint centerPoint = [self.collectionView.superview convertPoint:self.collectionView.center toView:self.collectionView];
+    
+    return [self _pageIndexRangeAtPoint:centerPoint];
 }
 
 
@@ -448,38 +475,34 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 #pragma mark - Property Updaters
 
-- (void) _updateCurrentPagePropertiesAndNotify
+- (void) _beganPossiblyChangingVisiblePageRange
 {
-    NSRange prevPageIndexRange = self.visiblePageIndexRange;
+    NSRange newPageRange = [self visiblePageIndexRange];
+    NSRange prevPageRange = self.pageRangeAtCenter;
     
-    
-    // update the visiblePageRange based on the current spread
-    NSUInteger currSpreadIndex = self.numberOfPageSpreads > 0 ? [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:self.singlePageMode] : NSNotFound;
-    self.visiblePageIndexRange = [self _pageIndexRangeForPageSpreadIndex:currSpreadIndex inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
-
-    
-    // update the pageProgress
-    CGFloat percentageComplete = 0;
-    CGFloat numberOfPages = self.numberOfPages;
-    if (numberOfPages == 1)
+    if (newPageRange.location != prevPageRange.location || newPageRange.length != newPageRange.length)
     {
-        percentageComplete = 1.0;
-    }
-    else if (numberOfPages > 1 && self.visiblePageIndexRange.location != NSNotFound)
-    {
-        NSUInteger lastVisiblePageIndex = self.visiblePageIndexRange.location + self.visiblePageIndexRange.length - 1;
+        [self beganScrollingIntoNewPageIndexRange:newPageRange from:prevPageRange];
         
-        percentageComplete = (CGFloat)(lastVisiblePageIndex) / (CGFloat)(numberOfPages - 1);
-    }
-    self.pageProgress = percentageComplete;
-    
-    
-    if (prevPageIndexRange.location != self.visiblePageIndexRange.location ||
-        prevPageIndexRange.length != self.visiblePageIndexRange.length)
-    {
-        [self didChangeVisiblePageIndexRangeFrom:prevPageIndexRange];
+        // update the page range under the center of the screen
+        self.pageRangeAtCenter = newPageRange;
     }
 }
+- (void) _finishedPossiblyChangingVisiblePageRange
+{
+    NSRange newPageRange = [self visiblePageIndexRange];
+    NSRange prevPageRange = self.previousVisiblePageRange;
+    
+    if (newPageRange.location != prevPageRange.location || newPageRange.length != newPageRange.length)
+    {
+        [self finishedScrollingIntoNewPageIndexRange:newPageRange from:prevPageRange];
+        
+        self.previousVisiblePageRange = newPageRange;
+    }
+}
+
+
+
 
 
 // get the page range that is at the center if the screen.
@@ -500,33 +523,39 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         self.currentPageIndex = pageRange.location;
         
         // update the visiblePageRange & pageProgress, and notify
-        [self _updateCurrentPagePropertiesAndNotify];
+        [self _finishedPossiblyChangingVisiblePageRange];
     }
 }
-
-
 
 
 
 
 
 #pragma mark - Delegate methods
-
-- (void) startedChangingVisiblePageIndexRange
+- (void) beganScrollingFrom:(NSRange)currentPageIndexRange
 {
-    if ([self.delegate respondsToSelector:@selector(versoPagedViewStartedChangingVisiblePageIndexRange:)])
+    if ([self.delegate respondsToSelector:@selector(versoPagedView:beganScrollingFrom:)])
     {
-        [self.delegate versoPagedViewStartedChangingVisiblePageIndexRange:self];
+        [self.delegate versoPagedView:self beganScrollingFrom:currentPageIndexRange];
     }
 }
 
-- (void) didChangeVisiblePageIndexRangeFrom:(NSRange)prevRange
+- (void) beganScrollingIntoNewPageIndexRange:(NSRange)newPageIndexRange from:(NSRange)previousPageIndexRange
 {
-    if ([self.delegate respondsToSelector:@selector(versoPagedView:didChangeVisiblePageIndexRangeFrom:)])
+    if ([self.delegate respondsToSelector:@selector(versoPagedView:beganScrollingIntoNewPageIndexRange:from:)])
     {
-        [self.delegate versoPagedView:self didChangeVisiblePageIndexRangeFrom:prevRange];
+        [self.delegate versoPagedView:self beganScrollingIntoNewPageIndexRange:newPageIndexRange from:previousPageIndexRange];
+    }
+}
+
+- (void) finishedScrollingIntoNewPageIndexRange:(NSRange)newPageIndexRange from:(NSRange)previousPageIndexRange
+{
+    if ([self.delegate respondsToSelector:@selector(versoPagedView:finishedScrollingIntoNewPageIndexRange:from:)])
+    {
+        [self.delegate versoPagedView:self finishedScrollingIntoNewPageIndexRange:newPageIndexRange from:previousPageIndexRange];
     }
     
+    // TODO: Prefetch behind current page
     
     // do the prefetching around the newly visible page
     NSUInteger pagesAheadToPrefetch = 3;
@@ -541,6 +570,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         [self _prefetchViewImagesAroundIndex:startPrefetchAfterIndex pagesBefore:0 pagesAfter:pagesAheadToPrefetch];
     }
 }
+
+
 
 - (void) didTapLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys
 {
@@ -889,27 +920,24 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
-    
+    // report that page range change started
+    [self _beganPossiblyChangingVisiblePageRange];
 }
 - (void) scrollViewWillBeginDragging:(UIScrollView *)scrollView
 {
-    [self startedChangingVisiblePageIndexRange];
+    [self beganScrollingFrom:[self visiblePageIndexRange]];
 }
 - (void) scrollViewDidEndDecelerating:(UIScrollView *)scrollView
 {
+    // try to update the current page index, if it has changed
     [self _updateCurrentPageIndexIfChanged];
-}
-
-- (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset
-{
 }
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
 {
+    // try to update the current page index, if it has changed
     [self _updateCurrentPageIndexIfChanged];
 }
-- (void) scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
-{
-}
+
 
 
 

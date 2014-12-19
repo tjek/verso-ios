@@ -38,21 +38,26 @@
 @property (nonatomic, assign, readonly) NSUInteger currentPageIndex;
 
 /**
- *  The range of page indexes that are currently visible. 
- *  `.location` this is the index of the first visible page (e.g `currentPageIndex`).
- *  `.length` is the number of visible pages (e.g. 2 if showing two pages)
- */
-@property (nonatomic, assign, readonly) NSRange visiblePageIndexRange;
-
-/**
  *  The total number of pages that the datasource provided
  */
 @property (nonatomic, assign, readonly) NSUInteger numberOfPages;
 
+
+
+
+/**
+ *  The range of page indexes within the page spread that is currently under the center of the view
+ *  `.location` this is the index of the first visible page (e.g `currentPageIndex`).
+ *  `.length` is the number of visible pages (e.g. 2 if showing two pages)
+ *
+ *  @return The range of page indexes in the current page spread
+ */
+- (NSRange) visiblePageIndexRange;
+
 /**
  *  The percentage position of the last visible page (0.0 = first page, 1.0 = last page)
  */
-@property (nonatomic, assign, readonly) CGFloat pageProgress;
+- (CGFloat) pageProgress;
 
 
 
@@ -118,9 +123,10 @@
 
 @optional
 
-- (void) versoPagedViewStartedChangingVisiblePageIndexRange:(ETA_VersoPagedView *)versoPagedView;
 
-- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didChangeVisiblePageIndexRangeFrom:(NSRange)previousVisiblePageIndexRange;
+- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView beganScrollingFrom:(NSRange)currentPageIndexRange;
+- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView beganScrollingIntoNewPageIndexRange:(NSRange)newPageIndexRange from:(NSRange)previousPageIndexRange;
+- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView finishedScrollingIntoNewPageIndexRange:(NSRange)newPageIndexRange from:(NSRange)previousPageIndexRange;
 
 - (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didTapLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
 
