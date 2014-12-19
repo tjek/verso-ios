@@ -571,6 +571,21 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     }
 }
 
+- (void) willBeginDisplayingOutro
+{
+    if ([self.delegate respondsToSelector:@selector(willBeginDisplayingOutroForVersoPagedView:)])
+    {
+        [self.delegate willBeginDisplayingOutroForVersoPagedView:self];
+    }
+}
+- (void) didEndDisplayingOutro
+{
+    if ([self.delegate respondsToSelector:@selector(didEndDisplayingOutroForVersoPagedView:)])
+    {
+        [self.delegate didEndDisplayingOutroForVersoPagedView:self];
+    }
+}
+
 
 
 - (void) didTapLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys
@@ -917,6 +932,26 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     return reusableview;
 }
 
+- (void)collectionView:(UICollectionView *)collectionView willDisplaySupplementaryView:(UICollectionReusableView *)view forElementKind:(NSString *)elementKind atIndexPath:(NSIndexPath *)indexPath
+{
+    if (elementKind == UICollectionElementKindSectionFooter)
+    {
+        if (self.numberOfPages > 0)
+        {
+            [self willBeginDisplayingOutro];
+        }
+    }
+}
+- (void)collectionView:(UICollectionView *)collectionView didEndDisplayingSupplementaryView:(UICollectionReusableView *)view forElementOfKind:(NSString *)elementKind atIndexPath:(NSIndexPath *)indexPath
+{
+    if (elementKind == UICollectionElementKindSectionFooter)
+    {
+        if (self.numberOfPages > 0)
+        {
+            [self didEndDisplayingOutro];
+        }
+    }
+}
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {

@@ -134,8 +134,8 @@
 
 - (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didSetImage:(UIImage*)image isZoomImage:(BOOL)isZoomImage onPageIndex:(NSUInteger)pageIndex;
 
-
-
+- (void) willBeginDisplayingOutroForVersoPagedView:(ETA_VersoPagedView *)versoPagedView;
+- (void) didEndDisplayingOutroForVersoPagedView:(ETA_VersoPagedView *)versoPagedView;
 
 
 ////////////////////////////////////////////////////////////////////////////////
