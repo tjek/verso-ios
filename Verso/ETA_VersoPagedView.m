@@ -463,9 +463,10 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 - (NSRange) _pageIndexRangeAtViewCenter
 {
-    CGPoint centerPoint = [self.collectionView.superview convertPoint:self.collectionView.center toView:self.collectionView];
-    
-    return [self _pageIndexRangeAtPoint:centerPoint];
+    return [self _pageIndexRangeAtPoint:(CGPoint){
+        .x = CGRectGetMidX(self.collectionView.bounds),
+        .y = CGRectGetMidY(self.collectionView.bounds)
+    }];
 }
 
 
@@ -536,7 +537,9 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     if ([self.delegate respondsToSelector:@selector(versoPagedView:beganScrollingFrom:)])
     {
-        [self.delegate versoPagedView:self beganScrollingFrom:currentPageIndexRange];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate versoPagedView:self beganScrollingFrom:currentPageIndexRange];
+        });
     }
 }
 
@@ -544,45 +547,54 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     if ([self.delegate respondsToSelector:@selector(versoPagedView:beganScrollingIntoNewPageIndexRange:from:)])
     {
-        [self.delegate versoPagedView:self beganScrollingIntoNewPageIndexRange:newPageIndexRange from:previousPageIndexRange];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate versoPagedView:self beganScrollingIntoNewPageIndexRange:newPageIndexRange from:previousPageIndexRange];
+        });
     }
 }
 
 - (void) finishedScrollingIntoNewPageIndexRange:(NSRange)newPageIndexRange from:(NSRange)previousPageIndexRange
 {
-    if ([self.delegate respondsToSelector:@selector(versoPagedView:finishedScrollingIntoNewPageIndexRange:from:)])
-    {
-        [self.delegate versoPagedView:self finishedScrollingIntoNewPageIndexRange:newPageIndexRange from:previousPageIndexRange];
-    }
-    
-    // TODO: Prefetch behind current page
-    
-    // do the prefetching around the newly visible page
-    NSUInteger pagesAheadToPrefetch = 3;
-    NSUInteger startPrefetchAfterIndex = self.visiblePageIndexRange.location + self.visiblePageIndexRange.length - 1;
-    if ([self.delegate respondsToSelector:@selector(versoPagedView:numberOfPagesAheadToPrefetch:)])
-    {
-        pagesAheadToPrefetch = [self.delegate versoPagedView:self numberOfPagesAheadToPrefetch:startPrefetchAfterIndex];
-    }
-    
-    if (pagesAheadToPrefetch > 0)
-    {
-        [self _prefetchViewImagesAroundIndex:startPrefetchAfterIndex pagesBefore:0 pagesAfter:pagesAheadToPrefetch];
-    }
+    dispatch_async(dispatch_get_main_queue(), ^{
+        
+        if ([self.delegate respondsToSelector:@selector(versoPagedView:finishedScrollingIntoNewPageIndexRange:from:)])
+        {
+            [self.delegate versoPagedView:self finishedScrollingIntoNewPageIndexRange:newPageIndexRange from:previousPageIndexRange];
+        }
+        
+        // TODO: Prefetch behind current page
+        
+        // do the prefetching around the newly visible page
+        NSUInteger pagesAheadToPrefetch = 3;
+        NSUInteger startPrefetchAfterIndex = self.visiblePageIndexRange.location + self.visiblePageIndexRange.length - 1;
+        if ([self.delegate respondsToSelector:@selector(versoPagedView:numberOfPagesAheadToPrefetch:)])
+        {
+            pagesAheadToPrefetch = [self.delegate versoPagedView:self numberOfPagesAheadToPrefetch:startPrefetchAfterIndex];
+        }
+        
+        if (pagesAheadToPrefetch > 0)
+        {
+            [self _prefetchViewImagesAroundIndex:startPrefetchAfterIndex pagesBefore:0 pagesAfter:pagesAheadToPrefetch];
+        }
+    });
 }
 
 - (void) willBeginDisplayingOutro
 {
     if ([self.delegate respondsToSelector:@selector(willBeginDisplayingOutroForVersoPagedView:)])
     {
-        [self.delegate willBeginDisplayingOutroForVersoPagedView:self];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate willBeginDisplayingOutroForVersoPagedView:self];
+        });
     }
 }
 - (void) didEndDisplayingOutro
 {
     if ([self.delegate respondsToSelector:@selector(didEndDisplayingOutroForVersoPagedView:)])
     {
-        [self.delegate didEndDisplayingOutroForVersoPagedView:self];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate didEndDisplayingOutroForVersoPagedView:self];
+        });
     }
 }
 
@@ -592,7 +604,9 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     if ([self.delegate respondsToSelector:@selector(versoPagedView:didTapLocation:onPageIndex:hittingHotspotsWithKeys:)])
     {
-        [self.delegate versoPagedView:self didTapLocation:tapLocation onPageIndex:pageIndex hittingHotspotsWithKeys:hotspotKeys];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate versoPagedView:self didTapLocation:tapLocation onPageIndex:pageIndex hittingHotspotsWithKeys:hotspotKeys];
+        });
     }
 }
 
@@ -600,7 +614,9 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     if ([self.delegate respondsToSelector:@selector(versoPagedView:didLongPressLocation:onPageIndex:hittingHotspotsWithKeys:)])
     {
-        [self.delegate versoPagedView:self didLongPressLocation:longPressLocation onPageIndex:pageIndex hittingHotspotsWithKeys:hotspotKeys];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate versoPagedView:self didLongPressLocation:longPressLocation onPageIndex:pageIndex hittingHotspotsWithKeys:hotspotKeys];
+        });
     }
 }
 
@@ -608,7 +624,9 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     if ([self.delegate respondsToSelector:@selector(versoPagedView:didSetImage:isZoomImage:onPageIndex:)])
     {
-        [self.delegate versoPagedView:self didSetImage:image isZoomImage:isZoomImage onPageIndex:pageIndex];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate versoPagedView:self didSetImage:image isZoomImage:isZoomImage onPageIndex:pageIndex];
+        });
     }
 }
 
