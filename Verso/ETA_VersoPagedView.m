@@ -75,6 +75,11 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 -(void) setBounds:(CGRect)bounds
 {
+    // make sure the current cell is visible (specifically to close the outro view)
+    NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:self.singlePageMode];
+    [self _showPageSpreadAtIndex:currSpreadIndex animated:NO];
+    
+
     // in order to avoid item size warnings, invalidate the layout before the bounds change
     [self.collectionView.collectionViewLayout invalidateLayout];
     
