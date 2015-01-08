@@ -946,7 +946,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     {
         reusableview = [collectionView dequeueReusableSupplementaryViewOfKind:kind withReuseIdentifier:@"OutroContainerView" forIndexPath:indexPath];
         
-        self.outroView.frame = reusableview.bounds;
+        self.outroView.frame = UIEdgeInsetsInsetRect(reusableview.bounds, UIEdgeInsetsMake(0, 18, 0, 0));
         self.outroView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         
         [reusableview addSubview:self.outroView];
