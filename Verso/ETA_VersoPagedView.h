@@ -82,6 +82,9 @@
 @property (nonatomic, weak) id<ETA_VersoPagedViewDataSource> dataSource;
 @property (nonatomic, weak) id<ETA_VersoPagedViewDelegate> delegate;
 
+
+- (UIPanGestureRecognizer*) pagePanGestureRecognizer;
+
 @end
 
 

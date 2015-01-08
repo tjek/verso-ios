@@ -327,7 +327,10 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     return percentageComplete;
 }
 
-
+- (UIPanGestureRecognizer*) pagePanGestureRecognizer
+{
+    return self.collectionView.panGestureRecognizer;
+}
 
 #pragma mark - Private Methods
 
