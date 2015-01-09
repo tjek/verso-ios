@@ -33,6 +33,8 @@
 @property (nonatomic, strong) SDWebImageManager* cachedImageDownloader;
 
 @property (nonatomic, strong) UIView* outroView;
+@property (nonatomic, assign) BOOL isShowingOutroView;
+
 
 @end
 
@@ -64,6 +66,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     _numberOfPageSpreads = 0;
     _singlePageMode = YES;
     _previousVisiblePageRange = NSMakeRange(NSNotFound, 0);
+    _isShowingOutroView = NO;
     
     [self addSubviews];
 }
@@ -447,6 +450,9 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 // get the spread cell at the specified index
 - (ETA_VersoPageSpreadCell*) _cellForPageSpreadIndex:(NSUInteger)spreadIndex
 {
+    if (spreadIndex == NSNotFound)
+        return nil;
+    
     ETA_VersoPageSpreadCell* pageSpread = (ETA_VersoPageSpreadCell*)[self.collectionView cellForItemAtIndexPath:[NSIndexPath indexPathForItem:spreadIndex inSection:0]];
     
     return pageSpread;
@@ -455,7 +461,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 // get the spread cell for the current page index
 - (ETA_VersoPageSpreadCell*) _currentPageSpreadCell
 {
-    NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:self.singlePageMode];
+    NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:[self visiblePageIndexRange].location inSinglePageMode:self.singlePageMode];
     return [self _cellForPageSpreadIndex:currSpreadIndex];
 }
 
@@ -489,25 +495,19 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     NSRange newPageRange = [self visiblePageIndexRange];
     NSRange prevPageRange = self.pageRangeAtCenter;
     
-    if (newPageRange.location != prevPageRange.location || newPageRange.length != newPageRange.length)
-    {
-        [self beganScrollingIntoNewPageIndexRange:newPageRange from:prevPageRange];
-        
-        // update the page range under the center of the screen
-        self.pageRangeAtCenter = newPageRange;
-    }
+    [self beganScrollingIntoNewPageIndexRange:newPageRange from:prevPageRange];
+    
+    // update the page range under the center of the screen
+    self.pageRangeAtCenter = newPageRange;
 }
 - (void) _finishedPossiblyChangingVisiblePageRange
 {
     NSRange newPageRange = [self visiblePageIndexRange];
     NSRange prevPageRange = self.previousVisiblePageRange;
     
-    if (newPageRange.location != prevPageRange.location || newPageRange.length != newPageRange.length)
-    {
-        [self finishedScrollingIntoNewPageIndexRange:newPageRange from:prevPageRange];
-        
-        self.previousVisiblePageRange = newPageRange;
-    }
+    [self finishedScrollingIntoNewPageIndexRange:newPageRange from:prevPageRange];
+    
+    self.previousVisiblePageRange = newPageRange;
 }
 
 
@@ -530,9 +530,6 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     if (NSLocationInRange(self.currentPageIndex, pageRange) == NO)
     {
         self.currentPageIndex = pageRange.location;
-        
-        // update the visiblePageRange & pageProgress, and notify
-        [self _finishedPossiblyChangingVisiblePageRange];
     }
 }
 
@@ -553,6 +550,12 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 - (void) beganScrollingIntoNewPageIndexRange:(NSRange)newPageIndexRange from:(NSRange)previousPageIndexRange
 {
+    // nothing changed
+    if (newPageIndexRange.location == previousPageIndexRange.location && newPageIndexRange.length == previousPageIndexRange.length)
+    {
+        return;
+    }
+    
     if ([self.delegate respondsToSelector:@selector(versoPagedView:beganScrollingIntoNewPageIndexRange:from:)])
     {
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -563,6 +566,12 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 - (void) finishedScrollingIntoNewPageIndexRange:(NSRange)newPageIndexRange from:(NSRange)previousPageIndexRange
 {
+    // nothing changed
+    if (newPageIndexRange.location == previousPageIndexRange.location && newPageIndexRange.length == previousPageIndexRange.length)
+    {
+        return;
+    }
+    
     dispatch_async(dispatch_get_main_queue(), ^{
         
         if ([self.delegate respondsToSelector:@selector(versoPagedView:finishedScrollingIntoNewPageIndexRange:from:)])
@@ -962,8 +971,9 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     if (elementKind == UICollectionElementKindSectionFooter)
     {
-        if (self.numberOfPages > 0)
+        if (!self.isShowingOutroView && self.numberOfPages > 0 && collectionView.isDragging)
         {
+            self.isShowingOutroView = YES;
             [self willBeginDisplayingOutro];
         }
     }
@@ -972,8 +982,9 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     if (elementKind == UICollectionElementKindSectionFooter)
     {
-        if (self.numberOfPages > 0)
+        if (self.isShowingOutroView)
         {
+            self.isShowingOutroView = NO;
             [self didEndDisplayingOutro];
         }
     }
@@ -992,13 +1003,18 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     // try to update the current page index, if it has changed
     [self _updateCurrentPageIndexIfChanged];
+    
+    [self _finishedPossiblyChangingVisiblePageRange];
 }
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
 {
     // try to update the current page index, if it has changed
     [self _updateCurrentPageIndexIfChanged];
 }
-
+- (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
+{
+    [self _finishedPossiblyChangingVisiblePageRange];
+}
 
 
 

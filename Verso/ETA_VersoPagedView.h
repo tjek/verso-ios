@@ -85,6 +85,10 @@
 
 - (UIPanGestureRecognizer*) pagePanGestureRecognizer;
 
+
+- (BOOL) isShowingOutroView;
+
+
 @end
 
 
