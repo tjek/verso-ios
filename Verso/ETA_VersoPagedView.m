@@ -34,6 +34,7 @@
 
 @property (nonatomic, strong) UIView* outroView;
 @property (nonatomic, assign) BOOL isShowingOutroView;
+@property (nonatomic, strong) UITapGestureRecognizer* outsideOutroTap;
 
 
 @end
@@ -438,6 +439,30 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 #pragma mark Collection View Methods
 
+- (void) _closeOutro
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        // turn off paging, so that we dont automatically scroll back to the outro
+        self.collectionView.pagingEnabled = NO;
+        
+        [CATransaction begin]; {
+            // turn paging back on
+            __weak __typeof(self) weakSelf = self;
+            [CATransaction setCompletionBlock:^{
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                    weakSelf.collectionView.pagingEnabled = YES;
+                });
+            }];
+            
+            [CATransaction setAnimationDuration:0.15];
+            
+            [self goToPageIndex:self.currentPageIndex animated:YES];
+            
+        } [CATransaction commit];
+        
+    });
+}
+
 // scroll the specified spread into view
 - (void) _showPageSpreadAtIndex:(NSUInteger)spreadIndex animated:(BOOL)animated
 {
@@ -469,9 +494,10 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 - (NSRange) _pageIndexRangeAtPoint:(CGPoint)pointToCheck
 {
-    NSIndexPath* spreadIndexPath = [self.collectionView indexPathForItemAtPoint:pointToCheck];
-    NSUInteger spreadIndex = spreadIndexPath ? spreadIndexPath.item : NSNotFound;
-    
+    CGFloat collectionWidth = self.collectionView.bounds.size.width;
+   
+    NSUInteger spreadIndex = collectionWidth ? (NSUInteger)floor(pointToCheck.x/collectionWidth) : NSNotFound;
+
     NSRange pageRange = [self _pageIndexRangeForPageSpreadIndex:spreadIndex inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
     
     return pageRange;
@@ -497,19 +523,19 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     NSRange newPageRange = [self visiblePageIndexRange];
     NSRange prevPageRange = self.pageRangeAtCenter;
     
-    [self beganScrollingIntoNewPageIndexRange:newPageRange from:prevPageRange];
-    
     // update the page range under the center of the screen
     self.pageRangeAtCenter = newPageRange;
+    
+    [self beganScrollingIntoNewPageIndexRange:newPageRange from:prevPageRange];
 }
 - (void) _finishedPossiblyChangingVisiblePageRange
 {
     NSRange newPageRange = [self visiblePageIndexRange];
     NSRange prevPageRange = self.previousVisiblePageRange;
     
-    [self finishedScrollingIntoNewPageIndexRange:newPageRange from:prevPageRange];
-    
     self.previousVisiblePageRange = newPageRange;
+    
+    [self finishedScrollingIntoNewPageIndexRange:newPageRange from:prevPageRange];
 }
 
 
@@ -598,8 +624,34 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     });
 }
 
+- (void) didTapOutsideOutro:(UITapGestureRecognizer*)tap
+{
+    if (!self.isShowingOutroView)
+        return;
+
+    CGPoint pointInOutro = [tap locationInView:self.outroView];
+    if (CGRectContainsPoint(self.outroView.bounds, pointInOutro) == NO)
+    {
+        [self _closeOutro];
+    }
+}
+
 - (void) willBeginDisplayingOutro
 {
+    if (!self.outsideOutroTap)
+    {
+        self.outsideOutroTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTapOutsideOutro:)];
+        self.outsideOutroTap.cancelsTouchesInView = NO;
+        [self addGestureRecognizer:self.outsideOutroTap];
+        
+        NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:self.singlePageMode];
+        ETA_VersoPageSpreadCell* lastCell = [self _cellForPageSpreadIndex:currSpreadIndex];
+        
+        [lastCell.tapGesture requireGestureRecognizerToFail:self.outsideOutroTap];
+        [lastCell.doubleTapGesture requireGestureRecognizerToFail:self.outsideOutroTap];
+        [lastCell.longPressGesture requireGestureRecognizerToFail:self.outsideOutroTap];
+    }
+    
     if ([self.delegate respondsToSelector:@selector(willBeginDisplayingOutroForVersoPagedView:)])
     {
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -609,6 +661,12 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 }
 - (void) didEndDisplayingOutro
 {
+    if (self.outsideOutroTap)
+    {
+        [self removeGestureRecognizer:self.outsideOutroTap];
+        self.outsideOutroTap = nil;
+    }
+    
     if ([self.delegate respondsToSelector:@selector(didEndDisplayingOutroForVersoPagedView:)])
     {
         dispatch_async(dispatch_get_main_queue(), ^{

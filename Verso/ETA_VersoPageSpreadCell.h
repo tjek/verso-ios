@@ -22,6 +22,10 @@ typedef enum : NSUInteger {
 @property (nonatomic, weak) id<ETA_VersoPageSpreadCellDelegate> delegate;
 
 @property (nonatomic, strong, readonly) UIScrollView* zoomView;
+@property (nonatomic, strong, readonly) UITapGestureRecognizer* tapGesture;
+@property (nonatomic, strong, readonly) UITapGestureRecognizer* doubleTapGesture;
+@property (nonatomic, strong, readonly) UILongPressGestureRecognizer* longPressGesture;
+
 
 - (BOOL) anyImagesLoaded;
 - (BOOL) allImagesLoaded;
