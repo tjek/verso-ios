@@ -31,6 +31,7 @@
 @property (nonatomic, strong) UICollectionView* collectionView;
 
 @property (nonatomic, strong) SDWebImageManager* cachedImageDownloader;
+@property (nonatomic, strong) NSMutableSet* fetchingURLs;
 
 @property (nonatomic, strong) UIView* outroView;
 @property (nonatomic, assign) BOOL isShowingOutroView;
@@ -607,9 +608,22 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
             [self.delegate versoPagedView:self finishedScrollingIntoNewPageIndexRange:newPageIndexRange from:previousPageIndexRange];
         }
         
-        // TODO: Prefetch behind current page
-        
         // do the prefetching around the newly visible page
+        
+        NSUInteger pagesBehindToPrefetch = 3;
+        NSUInteger startPrefetchBeforeIndex = self.visiblePageIndexRange.location;
+        if ([self.delegate respondsToSelector:@selector(versoPagedView:numberOfPagesAheadToPrefetch:)])
+        {
+            pagesBehindToPrefetch = [self.delegate versoPagedView:self numberOfPagesBehindToPrefetch:startPrefetchBeforeIndex];
+        }
+        
+        if (pagesBehindToPrefetch > 0)
+        {
+            [self _prefetchViewImagesFromIndex:startPrefetchBeforeIndex-pagesBehindToPrefetch toIndex:startPrefetchBeforeIndex-1];
+        }
+        
+        
+    
         NSUInteger pagesAheadToPrefetch = 3;
         NSUInteger startPrefetchAfterIndex = self.visiblePageIndexRange.location + self.visiblePageIndexRange.length - 1;
         if ([self.delegate respondsToSelector:@selector(versoPagedView:numberOfPagesAheadToPrefetch:)])
@@ -619,7 +633,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         
         if (pagesAheadToPrefetch > 0)
         {
-            [self _prefetchViewImagesAroundIndex:startPrefetchAfterIndex pagesBefore:0 pagesAfter:pagesAheadToPrefetch];
+            [self _prefetchViewImagesFromIndex:startPrefetchAfterIndex+1 toIndex:startPrefetchAfterIndex+pagesAheadToPrefetch];
         }
     });
 }
@@ -1112,21 +1126,21 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 }
 
 
-
-- (void) _prefetchViewImagesAroundIndex:(NSInteger)aroundIndex pagesBefore:(NSUInteger)pagesBefore pagesAfter:(NSUInteger)pagesAfter
+- (void) _prefetchViewImagesFromIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex
 {
-    NSInteger prefetchFromIndex = MIN(MAX(aroundIndex - (NSInteger)pagesBefore, 0), (NSInteger)self.numberOfPages - 1);
-    NSInteger prefetchUntilIndex = MIN(MAX(aroundIndex + (NSInteger)pagesAfter, 0), (NSInteger)self.numberOfPages - 1);
+    if (fromIndex > toIndex || toIndex < 0)
+        return;
     
-    for (NSUInteger idx=prefetchFromIndex; idx<=prefetchUntilIndex; idx++)
+    fromIndex = MIN(MAX(fromIndex, 0), (NSInteger)self.numberOfPages - 1);
+    toIndex = MIN(MAX(toIndex, 0), (NSInteger)self.numberOfPages - 1);
+    
+    for (NSUInteger idx=fromIndex; idx<=toIndex; idx++)
     {
-        if (idx == aroundIndex)
-            continue;
-        
         NSURL* url = [self imageURLForPageIndex:idx withMaxSize:CGSizeZero isZoomImage:NO];
         [self _startFetchingImageAtURL:url forPageView:nil atPageIndex:idx isZoomImage:NO];
     }
 }
+
 
 
 
@@ -1177,6 +1191,15 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         return;
     }
     
+    if ([self.fetchingURLs containsObject:url])
+    {
+        return;
+    }
+    
+    if (!self.fetchingURLs)
+        self.fetchingURLs = [NSMutableSet set];
+    
+    [self.fetchingURLs addObject:url];
     
     
     NSString* imageID = [NSString stringWithFormat:@"%tu-%@%@", pageIndex, isZoomImage ? @"zoom":@"view", pageView?@"":@"-prefetch"];
@@ -1193,6 +1216,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         {
             NSLog(@"[ImgDL] Page %@ Error %@", imageID, error);
         }
+        [weakSelf.fetchingURLs removeObject:url];
         [weakSelf _updateImage:image forPageView:pageView atPageIndex:pageIndex isZoomImage:isZoomImage];
     };
     

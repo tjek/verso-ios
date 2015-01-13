@@ -154,6 +154,7 @@
 
 // default 3 if not implemented
 - (NSUInteger) versoPagedView:(ETA_VersoPagedView*)versoPagedView numberOfPagesAheadToPrefetch:(NSUInteger)afterPageIndex;
+- (NSUInteger) versoPagedView:(ETA_VersoPagedView*)versoPagedView numberOfPagesBehindToPrefetch:(NSUInteger)beforePageIndex;
 
 // defaults to the page number (pageIndex+1)
 - (NSAttributedString*) versoPagedView:(ETA_VersoPagedView*)versoPagedView pageNumberLabelStringForPageIndex:(NSUInteger)pageIndex;
