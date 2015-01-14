@@ -11,9 +11,11 @@
 @protocol ETA_VersoPageSpreadCellDelegate;
 
 typedef enum : NSUInteger {
-    ETA_VersoPageSpreadSide_Primary = 0,
-    ETA_VersoPageSpreadSide_Secondary = 1
+    ETA_VersoPageSpreadSide_Verso = 0,
+    ETA_VersoPageSpreadSide_Recto = 1,
 } ETA_VersoPageSpreadSide;
+
+
 
 
 
@@ -30,7 +32,7 @@ typedef enum : NSUInteger {
 - (BOOL) anyImagesLoaded;
 - (BOOL) allImagesLoaded;
 
-- (void) setPageIndex:(NSInteger)pageIndex forSide:(ETA_VersoPageSpreadSide)pageSide;
+- (void) setVersoPageIndex:(NSUInteger)versoPageIndex rectoPageIndex:(NSUInteger)rectoPageIndex animated:(BOOL)animated;
 - (NSInteger) pageIndexForSide:(ETA_VersoPageSpreadSide)pageSide;
 
 - (void) setPageNumberLabelText:(NSAttributedString*)text color:(UIColor*)color forSide:(ETA_VersoPageSpreadSide)pageSide;
@@ -48,8 +50,6 @@ typedef enum : NSUInteger {
 
 
 
-@property (nonatomic, assign) BOOL singlePageMode;
-- (void) setSinglePageMode:(BOOL)singlePageMode animated:(BOOL)animated;
 
 
 /**

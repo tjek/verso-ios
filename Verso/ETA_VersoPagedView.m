@@ -877,14 +877,45 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     NSUInteger versoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:YES inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
     NSUInteger rectoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:NO inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
     
-    
-    NSUInteger firstPageIndex = versoPageIndex == NSNotFound ? rectoPageIndex : versoPageIndex;
-    NSUInteger lastPageIndex = rectoPageIndex == NSNotFound ? versoPageIndex : rectoPageIndex;
- 
-    
-    BOOL singlePageMode = firstPageIndex == lastPageIndex;
+
     BOOL fitToWidth = NO;
+    [pageView setFitToWidth:fitToWidth animated:animated];
+    [pageView setVersoPageIndex:versoPageIndex rectoPageIndex:rectoPageIndex animated:animated];
+    
+    
+    
     BOOL showHotspots = self.showHotspots;
+    
+    
+    
+    [pageView setShowHotspots:showHotspots animated:animated];
+    
+    if (versoPageIndex != NSNotFound)
+    {
+        [pageView setPageNumberLabelText:[self pageNumberLabelStringForPageIndex:versoPageIndex]
+                                   color:[self pageNumberLabelColorForPageIndex:versoPageIndex]
+                                 forSide:ETA_VersoPageSpreadSide_Verso];
+        
+        [pageView setHotspotRects:[self hotspotRectsForPageIndex:versoPageIndex]
+                          forSide:ETA_VersoPageSpreadSide_Verso
+                normalizedByWidth:[self hotspotsNormalizedByWidthForPageIndex:versoPageIndex]];
+        
+    }
+    
+    if (rectoPageIndex != NSNotFound)
+    {
+        [pageView setPageNumberLabelText:[self pageNumberLabelStringForPageIndex:rectoPageIndex]
+                                   color:[self pageNumberLabelColorForPageIndex:rectoPageIndex]
+                                 forSide:ETA_VersoPageSpreadSide_Recto];
+        
+        [pageView setHotspotRects:[self hotspotRectsForPageIndex:rectoPageIndex]
+                          forSide:ETA_VersoPageSpreadSide_Recto
+                normalizedByWidth:[self hotspotsNormalizedByWidthForPageIndex:rectoPageIndex]];
+        
+    }
+    
+    
+
     
 //    if (singlePageMode)
 //        NSLog(@"Prepare PageView %tu (%@) - item:%tu", firstPageIndex, isVisible?@"Visible":@"Hidden", indexPath.item);
@@ -897,34 +928,6 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         [gesture requireGestureRecognizerToFail:self.collectionView.panGestureRecognizer];
     }];
     
-    [pageView setShowHotspots:showHotspots animated:animated];
-    [pageView setHotspotRects:[self hotspotRectsForPageIndex:firstPageIndex]
-                      forSide:ETA_VersoPageSpreadSide_Primary
-            normalizedByWidth:[self hotspotsNormalizedByWidthForPageIndex:firstPageIndex]];
-    
-    
-    [pageView setPageIndex:firstPageIndex
-                   forSide:ETA_VersoPageSpreadSide_Primary];
-
-    [pageView setPageNumberLabelText:[self pageNumberLabelStringForPageIndex:firstPageIndex]
-                               color:[self pageNumberLabelColorForPageIndex:firstPageIndex]
-                             forSide:ETA_VersoPageSpreadSide_Primary];
-    
-    if (!singlePageMode)
-    {
-        [pageView setPageIndex:lastPageIndex forSide:ETA_VersoPageSpreadSide_Secondary];
-        [pageView setHotspotRects:[self hotspotRectsForPageIndex:lastPageIndex]
-                          forSide: ETA_VersoPageSpreadSide_Secondary
-                normalizedByWidth:[self hotspotsNormalizedByWidthForPageIndex:lastPageIndex]];
-        
-        [pageView setPageNumberLabelText:[self pageNumberLabelStringForPageIndex:lastPageIndex]
-                                   color:[self pageNumberLabelColorForPageIndex:lastPageIndex]
-                                 forSide:ETA_VersoPageSpreadSide_Secondary];
-    }
-    
-    
-    [pageView setSinglePageMode:singlePageMode animated:animated];
-    [pageView setFitToWidth:fitToWidth animated:animated];
     
     [self _startFetchingImagesForPageView:pageView atIndexPath:[NSIndexPath indexPathForItem:spreadIndex inSection:0] zoomImage:NO];
     
@@ -948,13 +951,13 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     // get the page side for the page index
     ETA_VersoPageSpreadSide pageSide;
-    if ([pageView pageIndexForSide:ETA_VersoPageSpreadSide_Primary] == pageIndex)
+    if ([pageView pageIndexForSide:ETA_VersoPageSpreadSide_Verso] == pageIndex)
     {
-        pageSide = ETA_VersoPageSpreadSide_Primary;
+        pageSide = ETA_VersoPageSpreadSide_Verso;
     }
-    else if ([pageView pageIndexForSide:ETA_VersoPageSpreadSide_Secondary] == pageIndex)
+    else if ([pageView pageIndexForSide:ETA_VersoPageSpreadSide_Recto] == pageIndex)
     {
-        pageSide = ETA_VersoPageSpreadSide_Secondary;
+        pageSide = ETA_VersoPageSpreadSide_Recto;
     }
     else
     {
@@ -1155,25 +1158,22 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     NSUInteger versoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:YES inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
     NSUInteger rectoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:NO inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
     
-    NSUInteger firstPageIndex = versoPageIndex == NSNotFound ? rectoPageIndex : versoPageIndex;
-    NSUInteger lastPageIndex = rectoPageIndex == NSNotFound ? versoPageIndex : rectoPageIndex;
-    
-    
-    BOOL twoPages = firstPageIndex!=lastPageIndex;
+
+    BOOL twoPages = (versoPageIndex != NSNotFound) && (rectoPageIndex != NSNotFound);
 
     CGSize maxPageSize = [self _maxPageImageSizeForPageView:pageView showingTwoPages:twoPages zoomImage:zoomImage];
 
     // avoid refetching zoom images
-    if (!zoomImage || ![pageView isShowingZoomImageForSide:ETA_VersoPageSpreadSide_Primary])
+    if (versoPageIndex != NSNotFound && (!zoomImage || ![pageView isShowingZoomImageForSide:ETA_VersoPageSpreadSide_Verso]))
     {
-        NSURL* primaryURL = [self imageURLForPageIndex:firstPageIndex withMaxSize:maxPageSize isZoomImage:zoomImage];
-        [self _startFetchingImageAtURL:primaryURL forPageView:pageView atPageIndex:firstPageIndex isZoomImage:zoomImage];
+        NSURL* primaryURL = [self imageURLForPageIndex:versoPageIndex withMaxSize:maxPageSize isZoomImage:zoomImage];
+        [self _startFetchingImageAtURL:primaryURL forPageView:pageView atPageIndex:versoPageIndex isZoomImage:zoomImage];
     }
     
-    if (twoPages && (!zoomImage || ![pageView isShowingZoomImageForSide:ETA_VersoPageSpreadSide_Secondary]))
+    if (rectoPageIndex != NSNotFound && (!zoomImage || ![pageView isShowingZoomImageForSide:ETA_VersoPageSpreadSide_Recto]))
     {
-        NSURL* secondaryURL = [self imageURLForPageIndex:lastPageIndex withMaxSize:maxPageSize isZoomImage:zoomImage];
-        [self _startFetchingImageAtURL:secondaryURL forPageView:pageView atPageIndex:lastPageIndex isZoomImage:zoomImage];
+        NSURL* secondaryURL = [self imageURLForPageIndex:rectoPageIndex withMaxSize:maxPageSize isZoomImage:zoomImage];
+        [self _startFetchingImageAtURL:secondaryURL forPageView:pageView atPageIndex:rectoPageIndex isZoomImage:zoomImage];
     }
 }
 

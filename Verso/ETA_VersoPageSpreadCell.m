@@ -13,10 +13,10 @@
 
 @interface ETA_VersoPageSpreadCell () <UIScrollViewDelegate, UIGestureRecognizerDelegate>
 
-@property (nonatomic, assign) BOOL isPrimaryImageZoom;
-@property (nonatomic, assign) NSInteger primaryPageIndex;
-@property (nonatomic, assign) BOOL isSecondaryImageZoom;
-@property (nonatomic, assign) NSInteger secondaryPageIndex;
+@property (nonatomic, assign) BOOL isVersoImageZoom;
+@property (nonatomic, assign) NSInteger versoPageIndex;
+@property (nonatomic, assign) BOOL isRectoImageZoom;
+@property (nonatomic, assign) NSInteger rectoPageIndex;
 
 @property (nonatomic, strong) UITapGestureRecognizer* tapGesture;
 @property (nonatomic, strong) UITapGestureRecognizer* doubleTapGesture;
@@ -26,8 +26,8 @@
 
 @property (nonatomic, strong) UIView* pageContentsContainer;
 
-@property (nonatomic, strong) ETA_VersoSinglePageContentsView* primaryPageContents;
-@property (nonatomic, strong) ETA_VersoSinglePageContentsView* secondaryPageContents;
+@property (nonatomic, strong) ETA_VersoSinglePageContentsView* versoPageContents;
+@property (nonatomic, strong) ETA_VersoSinglePageContentsView* rectoPageContents;
 
 @end
 
@@ -42,7 +42,6 @@
 {
     if ((self = [super initWithFrame:frame]))
     {
-        _singlePageMode = NO;
         _fitToWidth = NO;
         
         [self addSubviews];
@@ -76,8 +75,8 @@
     
     
     
-    [self.pageContentsContainer addSubview:self.secondaryPageContents];
-    [self.pageContentsContainer addSubview:self.primaryPageContents];
+    [self.pageContentsContainer addSubview:self.rectoPageContents];
+    [self.pageContentsContainer addSubview:self.versoPageContents];
     
     [self.zoomView addSubview:self.pageContentsContainer];
         
@@ -97,13 +96,13 @@
     
     _showHotspots = NO;
     
-    _primaryPageIndex = -1;
-    [self.primaryPageContents clearHotspotRects];
-    [self setImage:nil isZoomImage:NO forSide:ETA_VersoPageSpreadSide_Primary animated:NO];
+    _versoPageIndex = NSNotFound;
+    [self.versoPageContents clearHotspotRects];
+    [self setImage:nil isZoomImage:NO forSide:ETA_VersoPageSpreadSide_Verso animated:NO];
     
-    _secondaryPageIndex = -1;
-    [self.secondaryPageContents clearHotspotRects];
-    [self setImage:nil isZoomImage:NO forSide:ETA_VersoPageSpreadSide_Secondary animated:NO];
+    _rectoPageIndex = NSNotFound;
+    [self.rectoPageContents clearHotspotRects];
+    [self setImage:nil isZoomImage:NO forSide:ETA_VersoPageSpreadSide_Recto animated:NO];
     
     [self setNeedsLayout];
 }
@@ -121,12 +120,20 @@
     
     CGRect readerBounds = self.contentView.bounds;
     
-    BOOL singlePageMode = self.singlePageMode;
+    BOOL versoVisible = self.versoPageIndex != NSNotFound;
+    BOOL rectoVisible = self.rectoPageIndex != NSNotFound;
+    
+    // which side is front most - defaults to verso
+    ETA_VersoPageSpreadSide frontmostSide = ETA_VersoPageSpreadSide_Verso;
+    if (versoVisible == NO && rectoVisible)
+        frontmostSide = ETA_VersoPageSpreadSide_Recto;
+    
+    
     BOOL fitToWidth = self.fitToWidth;
 
     // calculate the max size for a single page image
     CGSize maxPageSize = readerBounds.size;
-    if (!singlePageMode)
+    if (versoVisible && rectoVisible)
         maxPageSize.width = ceil(maxPageSize.width / 2);
     
     if (fitToWidth)
@@ -136,46 +143,65 @@
     
     CGRect containerFrame = CGRectZero;
     
-    CGRect primaryFrame = (CGRect){
-        .origin = CGPointZero,
-        .size = [self.primaryPageContents sizeThatFits:maxPageSize]
-    };
-    CGRect secondaryFrame = CGRectZero;
+    CGRect versoFrame = CGRectZero;
+    CGRect rectoFrame = CGRectZero;
     
-    
-    if (singlePageMode)
+    // size the pages, if they are visible
+    if (versoVisible)
     {
-        // scale the secondary page down a bit, so that when it appears it zooms in
-        CGFloat hiddenScaleFactor = 0.5;
-        secondaryFrame.size = (CGSize) {
-            .width = primaryFrame.size.width * hiddenScaleFactor,
-            .height = primaryFrame.size.width * hiddenScaleFactor
+        versoFrame.size = [self.versoPageContents sizeThatFits:maxPageSize];
+    }
+    if (rectoVisible)
+    {
+        rectoFrame.size = [self.rectoPageContents sizeThatFits:maxPageSize];
+    }
+
+    
+    // make a hidden page the size of the opposing page, and scale it down a bit, so that when it appears it zooms in
+    CGFloat hiddenScaleFactor = 0.5;
+    if (versoVisible == NO)
+    {
+        versoFrame.size = (CGSize) {
+            .width = rectoFrame.size.width * hiddenScaleFactor,
+            .height = rectoFrame.size.width * hiddenScaleFactor
         };
     }
-    else
+    if (rectoVisible == NO)
     {
-        secondaryFrame.size = [self.secondaryPageContents sizeThatFits:maxPageSize];
+        rectoFrame.size = (CGSize) {
+            .width = versoFrame.size.width * hiddenScaleFactor,
+            .height = versoFrame.size.width * hiddenScaleFactor
+        };
     }
+    
     
     
     // fit container to the contents
-    containerFrame.size = primaryFrame.size;
-    
-    if (singlePageMode == NO)
+    if (rectoVisible && !versoVisible)
     {
-        // position secondary to the right of primary (-1 to avoid flickering subpixel spine)
-        secondaryFrame.origin.x = floor(CGRectGetMaxX(primaryFrame)-1);
+        containerFrame.size.height = rectoFrame.size.height;
+        containerFrame.size.width = CGRectGetMaxX(rectoFrame);
+    }
+    // only verso visible
+    else if (versoVisible && !rectoVisible)
+    {
+        containerFrame.size.height = versoFrame.size.height;
+        containerFrame.size.width = CGRectGetMaxX(versoFrame);
+    }
+    else if (rectoVisible && versoVisible)
+    {
+        // position recto to the right of verso (-1 to avoid flickering subpixel spine)
+        rectoFrame.origin.x = floor(CGRectGetMaxX(versoFrame)-1);
         
         // increase the container size to fit the second page, if visible
-        containerFrame.size.height = MAX(containerFrame.size.height, secondaryFrame.size.height);
-        containerFrame.size.width = CGRectGetMaxX(secondaryFrame);
-        
+        containerFrame.size.height = MAX(versoFrame.size.height, rectoFrame.size.height);
+        containerFrame.size.width = CGRectGetMaxX(rectoFrame);
     }
     
     
     // center both pages vertically
-    primaryFrame.origin.y = MAX(0, (containerFrame.size.height / 2) - (primaryFrame.size.height / 2));
-    secondaryFrame.origin.y = MAX(0, (containerFrame.size.height / 2) - (secondaryFrame.size.height / 2));
+    versoFrame.origin.y = MAX(0, (containerFrame.size.height / 2) - (versoFrame.size.height / 2));
+    rectoFrame.origin.y = MAX(0, (containerFrame.size.height / 2) - (rectoFrame.size.height / 2));
     
 
     CGFloat zoomScale = self.zoomView.zoomScale;
@@ -188,8 +214,8 @@
     self.zoomView.contentSize = containerFrame.size;
  
     self.pageContentsContainer.frame = containerFrame;
-    self.primaryPageContents.frame = primaryFrame;
-    self.secondaryPageContents.frame = secondaryFrame;
+    self.versoPageContents.frame = versoFrame;
+    self.rectoPageContents.frame = rectoFrame;
     
     
     [self _updateZoomContentInsets];
@@ -225,32 +251,41 @@
 
 #pragma mark - Display Property Setters
 
-- (void) setSinglePageMode:(BOOL)singlePageMode
+- (void) setVersoPageIndex:(NSUInteger)versoPageIndex rectoPageIndex:(NSUInteger)rectoPageIndex animated:(BOOL)animated
 {
-    [self setSinglePageMode:singlePageMode animated:NO];
-}
+    BOOL wasVersoVisible = self.versoPageIndex != NSNotFound;
+    BOOL wasRectoVisible = self.rectoPageIndex != NSNotFound;
+    
+    self.versoPageIndex = versoPageIndex;
+    self.rectoPageIndex = rectoPageIndex;
 
-- (void) setSinglePageMode:(BOOL)singlePageMode animated:(BOOL)animated
-{
-    if (_singlePageMode == singlePageMode)
-        return;
+    BOOL isVersoVisible = self.versoPageIndex != NSNotFound;
+    BOOL isRectoVisible = self.rectoPageIndex != NSNotFound;
     
-    _singlePageMode = singlePageMode;
-    
+    // verso hiding - put recto in front
+    if (wasVersoVisible && isVersoVisible == NO)
+    {
+        [self.rectoPageContents.superview insertSubview:self.rectoPageContents aboveSubview:self.versoPageContents];
+    }
+    // recto hiding - put verso in front
+    else if (wasRectoVisible && isRectoVisible == NO)
+    {
+        [self.versoPageContents.superview insertSubview:self.versoPageContents aboveSubview:self.rectoPageContents];
+    }
     
     
     BOOL wereAnimationsEnabled = [UIView areAnimationsEnabled];
     
     // zoom out of the view
     [self.zoomView setZoomScale:self.zoomView.minimumZoomScale animated:animated];
-    
-    
+
     [self setNeedsLayout];
     [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^{
         
         [UIView setAnimationsEnabled:animated];
         
-        self.secondaryPageContents.alpha = singlePageMode ? 0 : 1;
+        self.versoPageContents.alpha = (self.versoPageIndex == NSNotFound) ? 0 : 1;
+        self.rectoPageContents.alpha = (self.rectoPageIndex == NSNotFound) ? 0 : 1;
         
         [self layoutIfNeeded];
         
@@ -278,14 +313,14 @@
     [self.zoomView setZoomScale:self.zoomView.minimumZoomScale animated:animated];
     
     [self setNeedsLayout];
-    [UIView animateWithDuration:0.3 animations:^{
+    [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^{
         
         [UIView setAnimationsEnabled:animated];
         
         [self layoutIfNeeded];
         
         [UIView setAnimationsEnabled:wereAnimationsEnabled];
-    }];
+    } completion:nil];
 }
 
 
@@ -294,49 +329,34 @@
 
 #pragma mark - Page Side properties
 
-- (void) setPageIndex:(NSInteger)pageIndex forSide:(ETA_VersoPageSpreadSide)pageSide
-{
-    switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-        {
-            self.primaryPageIndex = pageIndex;
-            break;
-        }
-        case ETA_VersoPageSpreadSide_Secondary:
-        {
-            self.secondaryPageIndex = pageIndex;
-            break;
-        }
-    }
-}
 - (NSInteger) pageIndexForSide:(ETA_VersoPageSpreadSide)pageSide
 {
     switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            return self.primaryPageIndex;
-        case ETA_VersoPageSpreadSide_Secondary:
-            return self.secondaryPageIndex;
+        case ETA_VersoPageSpreadSide_Verso:
+            return self.versoPageIndex;
+        case ETA_VersoPageSpreadSide_Recto:
+            return self.rectoPageIndex;
     }
 }
 
 - (BOOL) isShowingZoomImageForSide:(ETA_VersoPageSpreadSide)pageSide
 {
     switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            return self.isPrimaryImageZoom;
-        case ETA_VersoPageSpreadSide_Secondary:
-            return self.isSecondaryImageZoom;
+        case ETA_VersoPageSpreadSide_Verso:
+            return self.isVersoImageZoom;
+        case ETA_VersoPageSpreadSide_Recto:
+            return self.isRectoImageZoom;
     }
 }
 
 - (void) setIsShowingZoomImage:(BOOL)isShowingZoomImage forSide:(ETA_VersoPageSpreadSide)pageSide
 {
     switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            self.isPrimaryImageZoom = isShowingZoomImage;
+        case ETA_VersoPageSpreadSide_Verso:
+            self.isVersoImageZoom = isShowingZoomImage;
             break;
-        case ETA_VersoPageSpreadSide_Secondary:
-            self.isSecondaryImageZoom = isShowingZoomImage;
+        case ETA_VersoPageSpreadSide_Recto:
+            self.isRectoImageZoom = isShowingZoomImage;
             break;
     }
 }
@@ -345,11 +365,11 @@
 {
     ETA_VersoSinglePageContentsView* pageContentsView = nil;
     switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            pageContentsView = self.primaryPageContents;
+        case ETA_VersoPageSpreadSide_Verso:
+            pageContentsView = self.versoPageContents;
             break;
-        case ETA_VersoPageSpreadSide_Secondary:
-            pageContentsView = self.secondaryPageContents;
+        case ETA_VersoPageSpreadSide_Recto:
+            pageContentsView = self.rectoPageContents;
             break;
     }
     pageContentsView.pageNumberLabel.textColor = color;
@@ -368,11 +388,11 @@
     
     ETA_VersoSinglePageContentsView* pageContentsView = nil;
     switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            pageContentsView = self.primaryPageContents;
+        case ETA_VersoPageSpreadSide_Verso:
+            pageContentsView = self.versoPageContents;
             break;
-        case ETA_VersoPageSpreadSide_Secondary:
-            pageContentsView = self.secondaryPageContents;
+        case ETA_VersoPageSpreadSide_Recto:
+            pageContentsView = self.rectoPageContents;
             break;
     }
     
@@ -380,13 +400,9 @@
 }
 - (void) setImage:(UIImage *)image forPageContentsView:(ETA_VersoSinglePageContentsView*)pageContentsView animated:(BOOL)animated
 {
-    // TODO: fade in if animated
-    //        [UIView transitionWithView:self.primaryPageContents.imageView duration:0.3 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
-    //
-    //            self.primaryPageContents.imageView.image = image;
-    //
-    //        } completion:nil];
-
+    
+    if (pageContentsView.imageView.image == image)
+        return;
     
     pageContentsView.imageView.image = image;
     
@@ -396,21 +412,33 @@
     // enable/disable zooming depending on the images being loaded
     self.zoomView.pinchGestureRecognizer.enabled = [self allImagesLoaded];
     
+    // TODO: fade in if animated
+    // FIXME: The little anim jump glitch when the image is set just after the layout has started animating
+    // it causes a conflict with the contentInset, causing a little jump
     [self setNeedsLayout];
 }
 
 - (BOOL) anyImagesLoaded
 {
-    return self.primaryPageContents.imageView.image != nil || self.secondaryPageContents.imageView.image != nil;
+    if (self.versoPageIndex != NSNotFound && self.versoPageContents.imageView.image != nil)
+        return YES;
+    
+    if (self.rectoPageIndex != NSNotFound && self.rectoPageContents.imageView.image != nil)
+        return YES;
+    
+    return NO;
 }
 
 - (BOOL) allImagesLoaded
 {
-    BOOL allLoaded = self.primaryPageContents.imageView.image != nil;
-    if (allLoaded && self.singlePageMode == NO)
-    {
-        allLoaded = allLoaded && self.secondaryPageContents.imageView.image != nil;
-    }
+    BOOL allLoaded = YES;
+    
+    if (self.versoPageIndex != NSNotFound)
+        allLoaded = self.versoPageContents.imageView.image != nil;
+    
+    if (allLoaded && self.rectoPageIndex != NSNotFound)
+        allLoaded = self.rectoPageContents.imageView.image != nil;
+
     return allLoaded;
 }
 
@@ -422,8 +450,8 @@
 {
     _showHotspots = showHotspots;
     
-    [self.primaryPageContents setShowHotspots:(showHotspots && self.primaryPageContents.imageView.image) animated:animated];
-    [self.secondaryPageContents setShowHotspots:(showHotspots && self.secondaryPageContents.imageView.image) animated:animated];
+    [self.versoPageContents setShowHotspots:(showHotspots && self.versoPageContents.imageView.image) animated:animated];
+    [self.rectoPageContents setShowHotspots:(showHotspots && self.rectoPageContents.imageView.image) animated:animated];
 }
 
 
@@ -431,11 +459,11 @@
 {
     ETA_VersoSinglePageContentsView* pageContentsView = nil;
     switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            pageContentsView = self.primaryPageContents;
+        case ETA_VersoPageSpreadSide_Verso:
+            pageContentsView = self.versoPageContents;
             break;
-        case ETA_VersoPageSpreadSide_Secondary:
-            pageContentsView = self.secondaryPageContents;
+        case ETA_VersoPageSpreadSide_Recto:
+            pageContentsView = self.rectoPageContents;
             break;
     }
     [self setHotspotRects:hotspotRects forPageContentsView:pageContentsView normalizedByWidth:normalizedByWidth];
@@ -527,19 +555,26 @@
 - (ETA_VersoSinglePageContentsView*) _pageContentsViewForSide:(ETA_VersoPageSpreadSide)pageSide
 {
     switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            return self.primaryPageContents;
-        case ETA_VersoPageSpreadSide_Secondary:
-            return self.secondaryPageContents;
+        case ETA_VersoPageSpreadSide_Verso:
+            return self.versoPageContents;
+        case ETA_VersoPageSpreadSide_Recto:
+            return self.rectoPageContents;
     }
 }
 - (ETA_VersoPageSpreadSide) _pageSideForPoint:(CGPoint)point
 {
-    ETA_VersoPageSpreadSide pageSide = ETA_VersoPageSpreadSide_Primary;
-    if (self.singlePageMode == NO && point.x > CGRectGetMidX(self.bounds))
+    
+    BOOL versoVisible = self.versoPageIndex != NSNotFound;
+    BOOL rectoVisible = self.rectoPageIndex != NSNotFound;
+    
+    ETA_VersoPageSpreadSide pageSide = ETA_VersoPageSpreadSide_Verso;
+    
+    // there is a visible recto side, and either there is no verso, or we are past the center point
+    if (rectoVisible && (!versoVisible || (versoVisible && point.x > CGRectGetMidX(self.bounds))))
     {
-        pageSide = ETA_VersoPageSpreadSide_Secondary;
+        pageSide = ETA_VersoPageSpreadSide_Recto;
     }
+    
     return pageSide;
 }
 
@@ -704,25 +739,28 @@
     if (!_pageContentsContainer)
     {
         _pageContentsContainer = [UIView new];
+        _pageContentsContainer.backgroundColor = [UIColor colorWithRed:1.0 green:0 blue:0 alpha:0.1];
     }
     return _pageContentsContainer;
 }
 
-- (ETA_VersoSinglePageContentsView*) primaryPageContents
+- (ETA_VersoSinglePageContentsView*) versoPageContents
 {
-    if (!_primaryPageContents)
+    if (!_versoPageContents)
     {
-        _primaryPageContents = [ETA_VersoSinglePageContentsView new];
+        _versoPageContents = [ETA_VersoSinglePageContentsView new];
+        _versoPageContents.backgroundColor = [UIColor colorWithRed:1.0 green:0 blue:0 alpha:0.1];
     }
-    return _primaryPageContents;
+    return _versoPageContents;
 }
-- (ETA_VersoSinglePageContentsView*) secondaryPageContents
+- (ETA_VersoSinglePageContentsView*) rectoPageContents
 {
-    if (!_secondaryPageContents)
+    if (!_rectoPageContents)
     {
-        _secondaryPageContents = [ETA_VersoSinglePageContentsView new];
+        _rectoPageContents = [ETA_VersoSinglePageContentsView new];
+        _rectoPageContents.backgroundColor = [UIColor colorWithRed:1.0 green:0 blue:0 alpha:0.1];
     }
-    return _secondaryPageContents;
+    return _rectoPageContents;
 }
 
 @end
