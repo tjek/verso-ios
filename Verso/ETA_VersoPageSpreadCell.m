@@ -739,7 +739,7 @@
     if (!_pageContentsContainer)
     {
         _pageContentsContainer = [UIView new];
-        _pageContentsContainer.backgroundColor = [UIColor colorWithRed:1.0 green:0 blue:0 alpha:0.1];
+//        _pageContentsContainer.backgroundColor = [UIColor colorWithRed:1.0 green:0 blue:0 alpha:0.1];
     }
     return _pageContentsContainer;
 }
@@ -749,7 +749,7 @@
     if (!_versoPageContents)
     {
         _versoPageContents = [ETA_VersoSinglePageContentsView new];
-        _versoPageContents.backgroundColor = [UIColor colorWithRed:1.0 green:0 blue:0 alpha:0.1];
+//        _versoPageContents.backgroundColor = [UIColor colorWithRed:1.0 green:0 blue:0 alpha:0.1];
     }
     return _versoPageContents;
 }
@@ -758,7 +758,7 @@
     if (!_rectoPageContents)
     {
         _rectoPageContents = [ETA_VersoSinglePageContentsView new];
-        _rectoPageContents.backgroundColor = [UIColor colorWithRed:1.0 green:0 blue:0 alpha:0.1];
+//        _rectoPageContents.backgroundColor = [UIColor colorWithRed:1.0 green:0 blue:0 alpha:0.1];
     }
     return _rectoPageContents;
 }
