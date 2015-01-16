@@ -136,9 +136,12 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     BOOL prevSinglePageMode = _singlePageMode;
     
-    if (singlePageMode == prevSinglePageMode)
-        return;
-        
+    
+    // We dont check for equality here, as we need to trigger the maybe Finished changing page calls even if single page stays the same
+    // TODO: In a much nicer, less fragile, way
+//    if (singlePageMode == prevSinglePageMode)
+//        return;
+    
     _singlePageMode = singlePageMode;
     
     
