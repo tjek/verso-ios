@@ -84,13 +84,14 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:self.singlePageMode];
     [self _showPageSpreadAtIndex:currSpreadIndex animated:NO];
 
-    UIScrollView* currZoomView = [self _currentPageSpreadCell].zoomView;
-    [currZoomView setZoomScale:currZoomView.minimumZoomScale animated:NO];
-
+    [self _zoomOutCurrentPageSpread];
+    
     // in order to avoid item size warnings, invalidate the layout before the bounds change
     [self.collectionView.collectionViewLayout invalidateLayout];
     
+    
     [super setBounds:bounds];
+    
 }
 
 - (void) layoutSubviews
@@ -560,6 +561,25 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     {
         self.currentPageIndex = pageRange.location;
     }
+}
+
+
+
+- (void) _zoomOutCurrentPageSpread
+{
+    ETA_VersoPageSpreadCell* currSpreadCell = [self _currentPageSpreadCell];
+    UIScrollView* currZoomView = currSpreadCell.zoomView;
+    
+    CGFloat currZoom = currZoomView.zoomScale;
+    if (currZoom == currZoomView.minimumZoomScale)
+        return;
+    
+    [self versoPageSpreadWillBeginZooming:currSpreadCell];
+    
+    [currZoomView setZoomScale:currZoomView.minimumZoomScale animated:NO];
+    
+    [self versoPageSpreadDidEndZooming:currSpreadCell];
+    
 }
 
 
