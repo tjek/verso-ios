@@ -618,19 +618,19 @@
     }
 }
 
-- (void) didLongPress:(UITapGestureRecognizer*)tap
+- (void) didLongPress:(UILongPressGestureRecognizer*)longPress
 {
-    if (tap.state != UIGestureRecognizerStateBegan)
+    if (longPress.state != UIGestureRecognizerStateBegan)
         return;
     
     
-    CGPoint locationInPage = [tap locationInView:self];
+    CGPoint locationInPage = [longPress locationInView:self];
     
     
     ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
     ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
     
-    NSArray* hotspotKeys = [pageContentsView hotspotKeysAtPoint:[tap locationInView:pageContentsView]];
+    NSArray* hotspotKeys = [pageContentsView hotspotKeysAtPoint:[longPress locationInView:pageContentsView]];
     
     if ([self.delegate respondsToSelector:@selector(versoPageSpread:didReceiveLongPressAtPoint:onPageSide:hittingHotspotsWithKeys:)])
     {
