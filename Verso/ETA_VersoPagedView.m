@@ -168,49 +168,53 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         
     } [CATransaction commit];
     
-
     
-    // move the cells around - dont animate this
-    BOOL animsEnabled = [UIView areAnimationsEnabled];
-    [UIView setAnimationsEnabled:NO];
-    
-    [self.collectionView performBatchUpdates:^{
+    if (currSpreadCount != prevSpreadCount)
+    {        
+        // move the cells around - dont animate this
+        BOOL animsEnabled = [UIView areAnimationsEnabled];
+        [UIView setAnimationsEnabled:NO];
         
-        // insert or remove page spreads, and move the currently visible one
-        if (currSpreadCount > prevSpreadCount)
-        {
-            NSMutableArray* indexPathsToInsert = [NSMutableArray array];
+        __weak __typeof(self)weakSelf = self;
+        [self.collectionView performBatchUpdates:^{
+            __strong __typeof(weakSelf)strongSelf = weakSelf;
             
-            // add indexes to the end
-            for (NSUInteger i = prevSpreadCount; i < currSpreadCount; i++)
+            // insert or remove page spreads, and move the currently visible one
+            if (currSpreadCount > prevSpreadCount)
             {
-                [indexPathsToInsert addObject:[NSIndexPath indexPathForRow:i inSection:0]];
+                NSMutableArray* indexPathsToInsert = [NSMutableArray array];
+                
+                // add indexes to the end
+                for (NSUInteger i = prevSpreadCount; i < currSpreadCount; i++)
+                {
+                    [indexPathsToInsert addObject:[NSIndexPath indexPathForRow:i inSection:0]];
+                }
+                
+                [strongSelf.collectionView insertItemsAtIndexPaths:indexPathsToInsert];
+                [strongSelf.collectionView moveItemAtIndexPath:[NSIndexPath indexPathForItem:prevSpreadIndex inSection:0]
+                                                   toIndexPath:[NSIndexPath indexPathForItem:currSpreadIndex inSection:0]];
             }
-            
-            [self.collectionView insertItemsAtIndexPaths:indexPathsToInsert];
-            [self.collectionView moveItemAtIndexPath:[NSIndexPath indexPathForItem:prevSpreadIndex inSection:0]
-                                         toIndexPath:[NSIndexPath indexPathForItem:currSpreadIndex inSection:0]];
-        }
-        else if (currSpreadCount < prevSpreadCount)
-        {
-            NSMutableArray* indexPathsToDelete = [NSMutableArray array];
-            for (NSUInteger i = currSpreadCount; i < prevSpreadCount; i++)
+            else if (currSpreadCount < prevSpreadCount)
             {
-                [indexPathsToDelete addObject:[NSIndexPath indexPathForRow:i inSection:0]];
+                NSMutableArray* indexPathsToDelete = [NSMutableArray array];
+                for (NSUInteger i = currSpreadCount; i < prevSpreadCount; i++)
+                {
+                    [indexPathsToDelete addObject:[NSIndexPath indexPathForRow:i inSection:0]];
+                }
+                
+                [strongSelf.collectionView moveItemAtIndexPath:[NSIndexPath indexPathForItem:prevSpreadIndex inSection:0]
+                                                   toIndexPath:[NSIndexPath indexPathForItem:currSpreadIndex inSection:0]];
+                
+                [strongSelf.collectionView deleteItemsAtIndexPaths:indexPathsToDelete];
             }
-            
-            [self.collectionView moveItemAtIndexPath:[NSIndexPath indexPathForItem:prevSpreadIndex inSection:0]
-                                         toIndexPath:[NSIndexPath indexPathForItem:currSpreadIndex inSection:0]];
-            
-            [self.collectionView deleteItemsAtIndexPaths:indexPathsToDelete];
-        }
-    } completion:^(BOOL finished) {
-        // TODO: fix strange flicker when items spread count get smaller - no cell visible when breaking in completion block
-        [self.collectionView flashScrollIndicators];
-    }];
-    
-    [UIView setAnimationsEnabled:animsEnabled];
-    
+        } completion:^(BOOL finished) {
+            __strong __typeof(weakSelf)strongSelf = weakSelf;
+            // TODO: fix strange flicker when items spread count get smaller - no cell visible when breaking in completion block
+            [strongSelf.collectionView flashScrollIndicators];
+        }];
+        
+        [UIView setAnimationsEnabled:animsEnabled];
+    }
     
     // make sure the current cell is visible
     [self _showPageSpreadAtIndex:currSpreadIndex animated:NO];
