@@ -14,13 +14,11 @@
 		AE71DAE91A261F880090297F /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AE71DAE81A261F880090297F /* Images.xcassets */; };
 		AE71DAEC1A261F880090297F /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = AE71DAEA1A261F880090297F /* LaunchScreen.xib */; };
 		AE71DB041A2620030090297F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AE71DB031A2620030090297F /* Main.storyboard */; };
-		E1386A295D0F25EC094DE73E /* libPods-Verso Example.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3F2D8694D86FF5A718D23ADA /* libPods-Verso Example.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		1AB9177B092BB3E1BD6C4554 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A2185CAA489948970F1AE79 /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
-		3F2D8694D86FF5A718D23ADA /* libPods-Verso Example.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Verso Example.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AE71DAD81A261F880090297F /* Verso Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Verso Example.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AE71DADC1A261F880090297F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AE71DADD1A261F880090297F /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -44,7 +42,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E1386A295D0F25EC094DE73E /* libPods-Verso Example.a in Frameworks */,
 				02D87B6A297EF247FD4D9915 /* libPods.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -119,7 +116,6 @@
 		BA3F167D947B8892605B1C03 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				3F2D8694D86FF5A718D23ADA /* libPods-Verso Example.a */,
 				1AB9177B092BB3E1BD6C4554 /* libPods.a */,
 			);
 			name = Frameworks;

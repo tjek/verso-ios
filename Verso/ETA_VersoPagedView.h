@@ -18,23 +18,57 @@
 
 /**
  *  Whether we show only 1 page on the screen at a time.
- *  Will trigger a reload of the data
+ *  Will trigger a reload of the data.
  */
 @property (nonatomic, assign) BOOL singlePageMode;
+- (void) setSinglePageMode:(BOOL)singlePageMode animated:(BOOL)animated;
+
+
 
 @property (nonatomic, assign) BOOL showHotspots;
 - (void) setShowHotspots:(BOOL)showHotspots animated:(BOOL)animated;
 
 
-// pageIndex will be clamped within valid number of pages
 
-// the index of the first visible page
+
+/**
+ *  The index (starts at 0) of the currently visible page. 
+ *  If there are two pages visible, this is the index of the first page.
+ */
 @property (nonatomic, assign, readonly) NSUInteger currentPageIndex;
 
+/**
+ *  The total number of pages that the datasource provided
+ */
+@property (nonatomic, assign, readonly) NSUInteger numberOfPages;
+
+
+
+
+/**
+ *  The range of page indexes within the page spread that is currently under the center of the view
+ *  `.location` this is the index of the first visible page (e.g `currentPageIndex`).
+ *  `.length` is the number of visible pages (e.g. 2 if showing two pages)
+ *
+ *  @return The range of page indexes in the current page spread
+ */
+- (NSRange) visiblePageIndexRange;
+
+/**
+ *  The percentage position of the last visible page (0.0 = first page, 1.0 = last page)
+ */
+- (CGFloat) pageProgress;
+
+
+
+/**
+ *  Scroll the paged view to the specified page index (the first page is index 0).
+ *
+ *  @param pageIndex The page index to scroll to. Will be clamped to the number of pages.
+ *  @param animated  Whether to animate the changing of the page.
+ */
 - (void) goToPageIndex:(NSInteger)pageIndex animated:(BOOL)animated;
 
-
-@property (nonatomic, assign, readonly) NSRange visiblePageIndexRange;
 
 
 /**
@@ -47,6 +81,13 @@
 
 @property (nonatomic, weak) id<ETA_VersoPagedViewDataSource> dataSource;
 @property (nonatomic, weak) id<ETA_VersoPagedViewDelegate> delegate;
+
+
+- (UIPanGestureRecognizer*) pagePanGestureRecognizer;
+
+
+- (BOOL) isShowingOutroView;
+
 
 @end
 
@@ -68,7 +109,12 @@
 
 
 @optional
+
 - (NSDictionary*) versoPagedView:(ETA_VersoPagedView*)versoPagedView hotspotRectsForPageIndex:(NSUInteger)pageIndex;
+
+// normalizedByWidth means that the width of the hotspot is normalized 0->1, but the height is normalized 0->[image height/width]. Defaults to NO.
+// For example, a hotspot with origin [0.5, 0.5] in an image of size 100x150 will have a pixel origin of [50, 66.6] if normalizedByWidth is true. Otherwise, if false, the pixel origin would be [50, 75]
+- (BOOL) versoPagedView:(ETA_VersoPagedView*)versoPagedView hotspotRectsNormalizedByWidthForPageIndex:(NSUInteger)pageIndex;
 
 @end
 
@@ -84,16 +130,19 @@
 
 @optional
 
-- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didChangeVisiblePageIndexRangeFrom:(NSRange)previousVisiblePageIndexRange;
 
-- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didTapLocation:(CGPoint)tapLocation normalizedPoint:(CGPoint)normalizedPoint onPageIndex:(NSUInteger)pageIndex;
+- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView beganScrollingFrom:(NSRange)currentPageIndexRange;
+- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView beganScrollingIntoNewPageIndexRange:(NSRange)newPageIndexRange from:(NSRange)previousPageIndexRange;
+- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView finishedScrollingIntoNewPageIndexRange:(NSRange)newPageIndexRange from:(NSRange)previousPageIndexRange;
 
-- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didLongPressLocation:(CGPoint)longPressLocation normalizedPoint:(CGPoint)normalizedPoint onPageIndex:(NSUInteger)pageIndex;
+- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didTapLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
+
+- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didLongPressLocation:(CGPoint)longPressLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
 
 - (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didSetImage:(UIImage*)image isZoomImage:(BOOL)isZoomImage onPageIndex:(NSUInteger)pageIndex;
 
-
-
+- (void) willBeginDisplayingOutroForVersoPagedView:(ETA_VersoPagedView *)versoPagedView;
+- (void) didEndDisplayingOutroForVersoPagedView:(ETA_VersoPagedView *)versoPagedView;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,25 +151,18 @@
 
 @optional
 
-/**
- *  What background color to place behind the page image for a specific page
- *
- *  If not implemented, or you return `nil`, the default is for the background to be transparent.
- *
- *  @param versoPagedView   The paged view whose pages will be colored
- *  @param pageIndex         The page index that will be colored (starting at 0)
- *
- *  @return The color to be drawn behind the page image.
- *
- *  @since v1.0
- */
-- (UIColor*) versoPagedView:(ETA_VersoPagedView*)versoPagedView backgroundColorForPageIndex:(NSUInteger)pageIndex;
-
-
 
 // default 3 if not implemented
 - (NSUInteger) versoPagedView:(ETA_VersoPagedView*)versoPagedView numberOfPagesAheadToPrefetch:(NSUInteger)afterPageIndex;
+- (NSUInteger) versoPagedView:(ETA_VersoPagedView*)versoPagedView numberOfPagesBehindToPrefetch:(NSUInteger)beforePageIndex;
 
+// defaults to the page number (pageIndex+1)
+- (NSAttributedString*) versoPagedView:(ETA_VersoPagedView*)versoPagedView pageNumberLabelStringForPageIndex:(NSUInteger)pageIndex;
 
+// defaults to black
+- (UIColor*) versoPagedView:(ETA_VersoPagedView*)versoPagedView pageNumberLabelColorForPageIndex:(NSUInteger)pageIndex;
+
+- (UIView*) outroViewForVersoPagedView:(ETA_VersoPagedView*)versoPagedView;
+- (CGFloat) outroWidthForVersoPagedView:(ETA_VersoPagedView*)versoPagedView;
 
 @end

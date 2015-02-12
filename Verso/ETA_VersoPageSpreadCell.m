@@ -8,25 +8,26 @@
 
 #import "ETA_VersoPageSpreadCell.h"
 
-#import "ETA_ShortTapGestureRecognizer.h"
-
 #import "ETA_VersoSinglePageContentsView.h"
 
 
-@interface ETA_VersoPageSpreadCell () <UIScrollViewDelegate>
+@interface ETA_VersoPageSpreadCell () <UIScrollViewDelegate, UIGestureRecognizerDelegate>
 
-@property (nonatomic, assign) BOOL isPrimaryImageZoom;
-@property (nonatomic, assign) NSInteger primaryPageIndex;
-@property (nonatomic, assign) BOOL isSecondaryImageZoom;
-@property (nonatomic, assign) NSInteger secondaryPageIndex;
+@property (nonatomic, assign) BOOL isVersoImageZoom;
+@property (nonatomic, assign) NSInteger versoPageIndex;
+@property (nonatomic, assign) BOOL isRectoImageZoom;
+@property (nonatomic, assign) NSInteger rectoPageIndex;
 
+@property (nonatomic, strong) UITapGestureRecognizer* tapGesture;
+@property (nonatomic, strong) UITapGestureRecognizer* doubleTapGesture;
+@property (nonatomic, strong) UILongPressGestureRecognizer* longPressGesture;
 
 @property (nonatomic, strong) UIScrollView* zoomView;
 
 @property (nonatomic, strong) UIView* pageContentsContainer;
 
-@property (nonatomic, strong) ETA_VersoSinglePageContentsView* primaryPageContents;
-@property (nonatomic, strong) ETA_VersoSinglePageContentsView* secondaryPageContents;
+@property (nonatomic, strong) ETA_VersoSinglePageContentsView* versoPageContents;
+@property (nonatomic, strong) ETA_VersoSinglePageContentsView* rectoPageContents;
 
 @end
 
@@ -41,7 +42,6 @@
 {
     if ((self = [super initWithFrame:frame]))
     {
-        _singlePageMode = NO;
         _fitToWidth = NO;
         
         [self addSubviews];
@@ -56,24 +56,27 @@
 
 - (void)addSubviews
 {
+    // add the gesture recognizers
+    self.doubleTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTap:)];
+    self.doubleTapGesture.delegate = self;
+    self.doubleTapGesture.numberOfTapsRequired = 2;
+    [self.contentView addGestureRecognizer:self.doubleTapGesture];
     
-//    UITapGestureRecognizer* doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTapPageContainer:)];
-    ETA_ShortTapGestureRecognizer* doubleTap = [[ETA_ShortTapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTapPageContainer:)];
-    doubleTap.maxTapDelay = 0.3;
-    doubleTap.numberOfTapsRequired = 2;
-    [self.contentView addGestureRecognizer:doubleTap];
+    self.longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongPress:)];
+    self.longPressGesture.delegate = self;
+    [self.contentView addGestureRecognizer:self.longPressGesture];
     
-    UILongPressGestureRecognizer* longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongPressPageContainer:)];
-    [self.contentView addGestureRecognizer:longPress];
-    
-    UITapGestureRecognizer* tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTapPageContainer:)];
-    [tap requireGestureRecognizerToFail:doubleTap];
-    [self.contentView addGestureRecognizer:tap];
+    self.tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTap:)];
+    [self.tapGesture requireGestureRecognizerToFail:self.zoomView.panGestureRecognizer];
+    [self.tapGesture requireGestureRecognizerToFail:self.doubleTapGesture];
+    [self.tapGesture requireGestureRecognizerToFail:self.longPressGesture];
+    self.tapGesture.delegate = self;
+    [self.contentView addGestureRecognizer:self.tapGesture];
     
     
     
-    [self.pageContentsContainer addSubview:self.secondaryPageContents];
-    [self.pageContentsContainer addSubview:self.primaryPageContents];
+    [self.pageContentsContainer addSubview:self.rectoPageContents];
+    [self.pageContentsContainer addSubview:self.versoPageContents];
     
     [self.zoomView addSubview:self.pageContentsContainer];
         
@@ -89,16 +92,17 @@
     [self.zoomView setZoomScale:self.zoomView.minimumZoomScale animated:NO];
     [self.zoomView setContentSize:CGSizeZero];
     [self.zoomView setContentOffset:CGPointZero animated:NO];
+    self.zoomView.pinchGestureRecognizer.enabled = YES;
     
     _showHotspots = NO;
     
-    _primaryPageIndex = -1;
-    [self.primaryPageContents clearHotspotRects];
-    [self setImage:nil isZoomImage:NO forSide:ETA_VersoPageSpreadSide_Primary animated:NO];
+    _versoPageIndex = NSNotFound;
+    [self.versoPageContents clearHotspotRects];
+    [self setImage:nil isZoomImage:NO forSide:ETA_VersoPageSpreadSide_Verso animated:NO];
     
-    _secondaryPageIndex = -1;
-    [self.secondaryPageContents clearHotspotRects];
-    [self setImage:nil isZoomImage:NO forSide:ETA_VersoPageSpreadSide_Secondary animated:NO];
+    _rectoPageIndex = NSNotFound;
+    [self.rectoPageContents clearHotspotRects];
+    [self setImage:nil isZoomImage:NO forSide:ETA_VersoPageSpreadSide_Recto animated:NO];
     
     [self setNeedsLayout];
 }
@@ -116,13 +120,22 @@
     
     CGRect readerBounds = self.contentView.bounds;
     
-    BOOL singlePageMode = self.singlePageMode;
+    BOOL versoVisible = self.versoPageIndex != NSNotFound;
+    BOOL rectoVisible = self.rectoPageIndex != NSNotFound;
+    
+    // which side is front most - defaults to verso
+    ETA_VersoPageSpreadSide frontmostSide = ETA_VersoPageSpreadSide_Verso;
+    if (versoVisible == NO && rectoVisible)
+        frontmostSide = ETA_VersoPageSpreadSide_Recto;
+    
+    
     BOOL fitToWidth = self.fitToWidth;
 
     // calculate the max size for a single page image
     CGSize maxPageSize = readerBounds.size;
-    if (!singlePageMode)
-        maxPageSize.width /= 2;
+    if (versoVisible && rectoVisible)
+        maxPageSize.width = ceil(maxPageSize.width / 2);
+    
     if (fitToWidth)
         maxPageSize.height = UIViewNoIntrinsicMetric;
     
@@ -130,45 +143,65 @@
     
     CGRect containerFrame = CGRectZero;
     
-    CGRect primaryFrame = (CGRect){
-        .origin = CGPointZero,
-        .size = [self.primaryPageContents sizeThatFits:maxPageSize]
-    };
-    CGRect secondaryFrame = CGRectZero;
+    CGRect versoFrame = CGRectZero;
+    CGRect rectoFrame = CGRectZero;
     
-    
-    if (singlePageMode)
+    // size the pages, if they are visible
+    if (versoVisible)
     {
-        // scale the secondary page down a bit, so that when it appears it zooms in
-        CGFloat hiddenScaleFactor = 0.5;
-        secondaryFrame.size = (CGSize) {
-            .width = primaryFrame.size.width * hiddenScaleFactor,
-            .height = primaryFrame.size.width * hiddenScaleFactor
+        versoFrame.size = [self.versoPageContents sizeThatFits:maxPageSize];
+    }
+    if (rectoVisible)
+    {
+        rectoFrame.size = [self.rectoPageContents sizeThatFits:maxPageSize];
+    }
+
+    
+    // make a hidden page the size of the opposing page, and scale it down a bit, so that when it appears it zooms in
+    CGFloat hiddenScaleFactor = 0.5;
+    if (versoVisible == NO)
+    {
+        versoFrame.size = (CGSize) {
+            .width = rectoFrame.size.width * hiddenScaleFactor,
+            .height = rectoFrame.size.width * hiddenScaleFactor
         };
     }
-    else
+    if (rectoVisible == NO)
     {
-        secondaryFrame.size = [self.secondaryPageContents sizeThatFits:maxPageSize];
+        rectoFrame.size = (CGSize) {
+            .width = versoFrame.size.width * hiddenScaleFactor,
+            .height = versoFrame.size.width * hiddenScaleFactor
+        };
     }
+    
     
     
     // fit container to the contents
-    containerFrame.size = primaryFrame.size;
-    
-    if (singlePageMode == NO)
+    if (rectoVisible && !versoVisible)
     {
-        // increase the container size to fit the second page, if visible
-        containerFrame.size.height = MAX(containerFrame.size.height, secondaryFrame.size.height);
-        containerFrame.size.width += secondaryFrame.size.width;
+        containerFrame.size.height = rectoFrame.size.height;
+        containerFrame.size.width = CGRectGetMaxX(rectoFrame);
+    }
+    // only verso visible
+    else if (versoVisible && !rectoVisible)
+    {
+        containerFrame.size.height = versoFrame.size.height;
+        containerFrame.size.width = CGRectGetMaxX(versoFrame);
+    }
+    else if (rectoVisible && versoVisible)
+    {
+        // position recto to the right of verso (-1 to avoid flickering subpixel spine)
+        rectoFrame.origin.x = floor(CGRectGetMaxX(versoFrame)-1);
         
-        // position secondary to the right of primary
-        secondaryFrame.origin.x = CGRectGetMaxX(primaryFrame);
+        // increase the container size to fit the second page, if visible
+        containerFrame.size.height = MAX(versoFrame.size.height, rectoFrame.size.height);
+        containerFrame.size.width = CGRectGetMaxX(rectoFrame);
     }
     
     
     // center both pages vertically
-    primaryFrame.origin.y = MAX(0, (containerFrame.size.height / 2) - (primaryFrame.size.height / 2));
-    secondaryFrame.origin.y = MAX(0, (containerFrame.size.height / 2) - (secondaryFrame.size.height / 2));
+    versoFrame.origin.y = MAX(0, (containerFrame.size.height / 2) - (versoFrame.size.height / 2));
+    rectoFrame.origin.y = MAX(0, (containerFrame.size.height / 2) - (rectoFrame.size.height / 2));
     
 
     CGFloat zoomScale = self.zoomView.zoomScale;
@@ -181,8 +214,8 @@
     self.zoomView.contentSize = containerFrame.size;
  
     self.pageContentsContainer.frame = containerFrame;
-    self.primaryPageContents.frame = primaryFrame;
-    self.secondaryPageContents.frame = secondaryFrame;
+    self.versoPageContents.frame = versoFrame;
+    self.rectoPageContents.frame = rectoFrame;
     
     
     [self _updateZoomContentInsets];
@@ -218,37 +251,46 @@
 
 #pragma mark - Display Property Setters
 
-- (void) setSinglePageMode:(BOOL)singlePageMode
+- (void) setVersoPageIndex:(NSUInteger)versoPageIndex rectoPageIndex:(NSUInteger)rectoPageIndex animated:(BOOL)animated
 {
-    [self setSinglePageMode:singlePageMode animated:NO];
-}
+    BOOL wasVersoVisible = self.versoPageIndex != NSNotFound;
+    BOOL wasRectoVisible = self.rectoPageIndex != NSNotFound;
+    
+    self.versoPageIndex = versoPageIndex;
+    self.rectoPageIndex = rectoPageIndex;
 
-- (void) setSinglePageMode:(BOOL)singlePageMode animated:(BOOL)animated
-{
-    if (_singlePageMode == singlePageMode)
-        return;
+    BOOL isVersoVisible = self.versoPageIndex != NSNotFound;
+    BOOL isRectoVisible = self.rectoPageIndex != NSNotFound;
     
-    _singlePageMode = singlePageMode;
-    
+    // verso hiding - put recto in front
+    if (wasVersoVisible && isVersoVisible == NO)
+    {
+        [self.rectoPageContents.superview insertSubview:self.rectoPageContents aboveSubview:self.versoPageContents];
+    }
+    // recto hiding - put verso in front
+    else if (wasRectoVisible && isRectoVisible == NO)
+    {
+        [self.versoPageContents.superview insertSubview:self.versoPageContents aboveSubview:self.rectoPageContents];
+    }
     
     
     BOOL wereAnimationsEnabled = [UIView areAnimationsEnabled];
     
     // zoom out of the view
     [self.zoomView setZoomScale:self.zoomView.minimumZoomScale animated:animated];
-    
-    
+
     [self setNeedsLayout];
-    [UIView animateWithDuration:0.3 animations:^{
+    [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^{
         
         [UIView setAnimationsEnabled:animated];
         
-        self.secondaryPageContents.alpha = singlePageMode ? 0 : 1;
+        self.versoPageContents.alpha = (self.versoPageIndex == NSNotFound) ? 0 : 1;
+        self.rectoPageContents.alpha = (self.rectoPageIndex == NSNotFound) ? 0 : 1;
         
         [self layoutIfNeeded];
         
         [UIView setAnimationsEnabled:wereAnimationsEnabled];
-    }];
+    } completion:nil];
 }
 
 - (void) setFitToWidth:(BOOL)fitToWidth
@@ -271,14 +313,14 @@
     [self.zoomView setZoomScale:self.zoomView.minimumZoomScale animated:animated];
     
     [self setNeedsLayout];
-    [UIView animateWithDuration:0.3 animations:^{
+    [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionBeginFromCurrentState animations:^{
         
         [UIView setAnimationsEnabled:animated];
         
         [self layoutIfNeeded];
         
         [UIView setAnimationsEnabled:wereAnimationsEnabled];
-    }];
+    } completion:nil];
 }
 
 
@@ -287,47 +329,51 @@
 
 #pragma mark - Page Side properties
 
-- (void) setPageIndex:(NSInteger)pageIndex forSide:(ETA_VersoPageSpreadSide)pageSide
-{
-    switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            self.primaryPageIndex = pageIndex;
-            break;
-        case ETA_VersoPageSpreadSide_Secondary:
-            self.secondaryPageIndex = pageIndex;
-            break;
-    }
-}
 - (NSInteger) pageIndexForSide:(ETA_VersoPageSpreadSide)pageSide
 {
     switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            return self.primaryPageIndex;
-        case ETA_VersoPageSpreadSide_Secondary:
-            return self.secondaryPageIndex;
+        case ETA_VersoPageSpreadSide_Verso:
+            return self.versoPageIndex;
+        case ETA_VersoPageSpreadSide_Recto:
+            return self.rectoPageIndex;
     }
 }
 
 - (BOOL) isShowingZoomImageForSide:(ETA_VersoPageSpreadSide)pageSide
 {
     switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            return self.isPrimaryImageZoom;
-        case ETA_VersoPageSpreadSide_Secondary:
-            return self.isSecondaryImageZoom;
+        case ETA_VersoPageSpreadSide_Verso:
+            return self.isVersoImageZoom;
+        case ETA_VersoPageSpreadSide_Recto:
+            return self.isRectoImageZoom;
     }
 }
 
 - (void) setIsShowingZoomImage:(BOOL)isShowingZoomImage forSide:(ETA_VersoPageSpreadSide)pageSide
 {
     switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            self.isPrimaryImageZoom = isShowingZoomImage;
+        case ETA_VersoPageSpreadSide_Verso:
+            self.isVersoImageZoom = isShowingZoomImage;
             break;
-        case ETA_VersoPageSpreadSide_Secondary:
-            self.isSecondaryImageZoom = isShowingZoomImage;
+        case ETA_VersoPageSpreadSide_Recto:
+            self.isRectoImageZoom = isShowingZoomImage;
             break;
     }
+}
+
+- (void) setPageNumberLabelText:(NSAttributedString*)text color:(UIColor*)color forSide:(ETA_VersoPageSpreadSide)pageSide
+{
+    ETA_VersoSinglePageContentsView* pageContentsView = nil;
+    switch (pageSide) {
+        case ETA_VersoPageSpreadSide_Verso:
+            pageContentsView = self.versoPageContents;
+            break;
+        case ETA_VersoPageSpreadSide_Recto:
+            pageContentsView = self.rectoPageContents;
+            break;
+    }
+    pageContentsView.pageNumberLabel.textColor = color;
+    pageContentsView.pageNumberLabel.attributedText = text;
 }
 
 - (void) setImage:(UIImage*)image isZoomImage:(BOOL)isZoomImage forSide:(ETA_VersoPageSpreadSide)pageSide animated:(BOOL)animated
@@ -342,11 +388,11 @@
     
     ETA_VersoSinglePageContentsView* pageContentsView = nil;
     switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            pageContentsView = self.primaryPageContents;
+        case ETA_VersoPageSpreadSide_Verso:
+            pageContentsView = self.versoPageContents;
             break;
-        case ETA_VersoPageSpreadSide_Secondary:
-            pageContentsView = self.secondaryPageContents;
+        case ETA_VersoPageSpreadSide_Recto:
+            pageContentsView = self.rectoPageContents;
             break;
     }
     
@@ -354,34 +400,45 @@
 }
 - (void) setImage:(UIImage *)image forPageContentsView:(ETA_VersoSinglePageContentsView*)pageContentsView animated:(BOOL)animated
 {
-    // TODO: fade in if animated
-    //        [UIView transitionWithView:self.primaryPageContents.imageView duration:0.3 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
-    //
-    //            self.primaryPageContents.imageView.image = image;
-    //
-    //        } completion:nil];
-
+    
+    if (pageContentsView.imageView.image == image)
+        return;
     
     pageContentsView.imageView.image = image;
     
     // update the hotspot visibility
     [pageContentsView setShowHotspots:(self.showHotspots && image) animated:animated];
     
+    // enable/disable zooming depending on the images being loaded
+    self.zoomView.pinchGestureRecognizer.enabled = [self allImagesLoaded];
+    
+    // TODO: fade in if animated
+    // FIXME: The little anim jump glitch when the image is set just after the layout has started animating
+    // it causes a conflict with the contentInset, causing a little jump
     [self setNeedsLayout];
 }
 
 - (BOOL) anyImagesLoaded
 {
-    return self.primaryPageContents.imageView.image != nil || self.secondaryPageContents.imageView.image != nil;
+    if (self.versoPageIndex != NSNotFound && self.versoPageContents.imageView.image != nil)
+        return YES;
+    
+    if (self.rectoPageIndex != NSNotFound && self.rectoPageContents.imageView.image != nil)
+        return YES;
+    
+    return NO;
 }
 
 - (BOOL) allImagesLoaded
 {
-    BOOL allLoaded = self.primaryPageContents.imageView.image != nil;
-    if (allLoaded && self.singlePageMode == NO)
-    {
-        allLoaded = allLoaded && self.secondaryPageContents.imageView.image != nil;
-    }
+    BOOL allLoaded = YES;
+    
+    if (self.versoPageIndex != NSNotFound)
+        allLoaded = self.versoPageContents.imageView.image != nil;
+    
+    if (allLoaded && self.rectoPageIndex != NSNotFound)
+        allLoaded = self.rectoPageContents.imageView.image != nil;
+
     return allLoaded;
 }
 
@@ -393,29 +450,30 @@
 {
     _showHotspots = showHotspots;
     
-    [self.primaryPageContents setShowHotspots:(showHotspots && self.primaryPageContents.imageView.image) animated:animated];
-    [self.secondaryPageContents setShowHotspots:(showHotspots && self.secondaryPageContents.imageView.image) animated:animated];
+    [self.versoPageContents setShowHotspots:(showHotspots && self.versoPageContents.imageView.image) animated:animated];
+    [self.rectoPageContents setShowHotspots:(showHotspots && self.rectoPageContents.imageView.image) animated:animated];
 }
 
 
-- (void) setHotspotRects:(NSDictionary *)hotspotRects forSide:(ETA_VersoPageSpreadSide)pageSide
+- (void) setHotspotRects:(NSDictionary *)hotspotRects forSide:(ETA_VersoPageSpreadSide)pageSide normalizedByWidth:(BOOL)normalizedByWidth
 {
     ETA_VersoSinglePageContentsView* pageContentsView = nil;
     switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            pageContentsView = self.primaryPageContents;
+        case ETA_VersoPageSpreadSide_Verso:
+            pageContentsView = self.versoPageContents;
             break;
-        case ETA_VersoPageSpreadSide_Secondary:
-            pageContentsView = self.secondaryPageContents;
+        case ETA_VersoPageSpreadSide_Recto:
+            pageContentsView = self.rectoPageContents;
             break;
     }
-    [self setHotspotRects:hotspotRects forPageContentsView:pageContentsView];
+    [self setHotspotRects:hotspotRects forPageContentsView:pageContentsView normalizedByWidth:normalizedByWidth];
 }
 
-- (void) setHotspotRects:(NSDictionary *)hotspotRects forPageContentsView:(ETA_VersoSinglePageContentsView*)pageContentsView
+- (void) setHotspotRects:(NSDictionary *)hotspotRects forPageContentsView:(ETA_VersoSinglePageContentsView*)pageContentsView normalizedByWidth:(BOOL)normalizedByWidth
 {
     [pageContentsView clearHotspotRects];
     [pageContentsView addHotspotRects:hotspotRects];
+    pageContentsView.hotspotsNormalizedByWidth = normalizedByWidth;
 }
 
 
@@ -494,105 +552,145 @@
 
 #pragma mark - Tapping Actions
 
-- (CGPoint) _normalizePoint:(CGPoint)pointToNormalize withinPageContentsView:(ETA_VersoSinglePageContentsView*)pageContentsView
-{
-    // convert pointToNormalize (which is relative to the pageContentsView) to hotspot-ratio (width = 1, height = aspectRatio)
-    CGSize pageContentsSize = pageContentsView.bounds.size;
-    pointToNormalize.x = pageContentsSize.width != 0 ? pointToNormalize.x / pageContentsSize.width : 0;
-    pointToNormalize.y = pageContentsSize.height != 0 ? pointToNormalize.y / pageContentsSize.height : 0;
-    
-//    normalizedPoint
-//    CGPoint normalizedPoint = pageContentsSize.width != 0 ? CGPointMake(pointToNormalize.x / pageContentsSize.width, pointToNormalize.y/pageContentsSize.width) : CGPointZero;
-    return pointToNormalize;
-}
-
-
 - (ETA_VersoSinglePageContentsView*) _pageContentsViewForSide:(ETA_VersoPageSpreadSide)pageSide
 {
     switch (pageSide) {
-        case ETA_VersoPageSpreadSide_Primary:
-            return self.primaryPageContents;
-        case ETA_VersoPageSpreadSide_Secondary:
-            return self.secondaryPageContents;
+        case ETA_VersoPageSpreadSide_Verso:
+            return self.versoPageContents;
+        case ETA_VersoPageSpreadSide_Recto:
+            return self.rectoPageContents;
     }
 }
 - (ETA_VersoPageSpreadSide) _pageSideForPoint:(CGPoint)point
 {
-    ETA_VersoPageSpreadSide pageSide = ETA_VersoPageSpreadSide_Primary;
-    if (self.singlePageMode == NO && point.x > CGRectGetMidY(self.bounds))
+    
+    BOOL versoVisible = self.versoPageIndex != NSNotFound;
+    BOOL rectoVisible = self.rectoPageIndex != NSNotFound;
+    
+    ETA_VersoPageSpreadSide pageSide = ETA_VersoPageSpreadSide_Verso;
+    
+    // there is a visible recto side, and either there is no verso, or we are past the center point
+    if (rectoVisible && (!versoVisible || (versoVisible && point.x > CGRectGetMidX(self.bounds))))
     {
-        pageSide = ETA_VersoPageSpreadSide_Secondary;
+        pageSide = ETA_VersoPageSpreadSide_Recto;
     }
+    
     return pageSide;
 }
 
-- (void) didTapPageContainer:(UITapGestureRecognizer*)tap
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
 {
-    if (tap.state != UIGestureRecognizerStateEnded)
-        return;
-
-    CGPoint locationInPage = [tap locationInView:self];
-    
-    
-    ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
-    ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
-    
-    // convert tap location to hotspot-ratio (width = 1, height = aspectRatio)
-    CGPoint normalizedPoint = [self _normalizePoint:[tap locationInView:pageContentsView] withinPageContentsView:pageContentsView];
-    
-    
-    
-    if ([self.delegate respondsToSelector:@selector(versoPageSpread:didReceiveTapAtPoint:onPageSide:atNormalizedPoint:)])
+    // allow double-tap to happen simultaneously with other gestures
+    if (gestureRecognizer == self.doubleTapGesture)
     {
-        [self.delegate versoPageSpread:self didReceiveTapAtPoint:locationInPage onPageSide:pageSide atNormalizedPoint:normalizedPoint];
+        return YES;
     }
-}
-
-- (void) didLongPressPageContainer:(UITapGestureRecognizer*)tap
-{
-    if (tap.state != UIGestureRecognizerStateBegan)
-        return;
-    
-    
-    CGPoint locationInPage = [tap locationInView:self];
-    
-    
-    ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
-    ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
-    
-    // convert tap location to hotspot-ratio (width = 1, height = aspectRatio)
-    CGPoint normalizedPoint = [self _normalizePoint:[tap locationInView:pageContentsView] withinPageContentsView:pageContentsView];
-    
-    
-    
-    if ([self.delegate respondsToSelector:@selector(versoPageSpread:didReceiveLongPressAtPoint:onPageSide:atNormalizedPoint:)])
+    else if (gestureRecognizer == self.tapGesture)
     {
-        [self.delegate versoPageSpread:self didReceiveLongPressAtPoint:locationInPage onPageSide:pageSide atNormalizedPoint:normalizedPoint];
+        return YES;
     }
-
-}
-
-- (void) didDoubleTapPageContainer:(UITapGestureRecognizer*)tap
-{
-    if (tap.state != UIGestureRecognizerStateEnded)
-        return;
-
-    // zoomed in - so zoom out again
-    if (self.zoomView.zoomScale > self.zoomView.minimumZoomScale)
+    else if (gestureRecognizer == self.longPressGesture)
     {
-        [self.zoomView setZoomScale:self.zoomView.minimumZoomScale animated:YES];
+        return YES;
     }
-    // zoomed out - find the rect we want to zoom to
     else
     {
-        CGFloat newScale = self.zoomView.maximumZoomScale;
-        
-        //TODO: if doubletap is over a hotspot, get the rect of the hotspot.
-
-        // otherwise, just zoom to the rect
-        CGRect zoomRect = [self _zoomRectForScale:newScale withCenter:[tap locationInView:self.zoomView]];
-        [self.zoomView zoomToRect:zoomRect animated:YES];
+        return NO;
     }
+}
+
+- (void) didTap:(UITapGestureRecognizer*)tap
+{
+    if (tap.state != UIGestureRecognizerStateEnded)
+        return;
+
+    CGPoint locationInPage = [tap locationInView:self];
+    
+    
+    ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
+    ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
+    
+    NSArray* hotspotKeys = (pageContentsView.imageView.image) ? [pageContentsView hotspotKeysAtPoint:[tap locationInView:pageContentsView]] : nil;
+    
+    if ([self.delegate respondsToSelector:@selector(versoPageSpread:didReceiveTapAtPoint:onPageSide:hittingHotspotsWithKeys:)])
+    {
+        [self.delegate versoPageSpread:self didReceiveTapAtPoint:locationInPage onPageSide:pageSide hittingHotspotsWithKeys:hotspotKeys];
+    }
+}
+
+- (void) didLongPress:(UILongPressGestureRecognizer*)longPress
+{
+    if (longPress.state != UIGestureRecognizerStateBegan)
+        return;
+    
+    
+    CGPoint locationInPage = [longPress locationInView:self];
+    
+    
+    ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
+    ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
+    
+    NSArray* hotspotKeys = [pageContentsView hotspotKeysAtPoint:[longPress locationInView:pageContentsView]];
+    
+    if ([self.delegate respondsToSelector:@selector(versoPageSpread:didReceiveLongPressAtPoint:onPageSide:hittingHotspotsWithKeys:)])
+    {
+        [self.delegate versoPageSpread:self didReceiveLongPressAtPoint:locationInPage onPageSide:pageSide hittingHotspotsWithKeys:hotspotKeys];
+    }
+
+}
+
+- (void) didDoubleTap:(UITapGestureRecognizer*)tap
+{
+    if (tap.state != UIGestureRecognizerStateEnded)
+        return;
+
+    // no-op if zoom is disabled
+    if (self.zoomView.pinchGestureRecognizer.enabled == NO)
+        return;
+    
+    [self.zoomView.delegate scrollViewWillBeginZooming:self.zoomView withView:[self.zoomView.delegate viewForZoomingInScrollView:self.zoomView]];
+
+    BOOL zoomingOut = (self.zoomView.zoomScale > self.zoomView.minimumZoomScale);
+    
+    void (^zoomAnimations)() = ^() {
+        // zoomed in - so zoom out again
+        if (zoomingOut)
+        {
+            [self.zoomView setZoomScale:self.zoomView.minimumZoomScale animated:NO];
+        }
+        // zoomed out - find the rect we want to zoom to
+        else
+        {
+            CGFloat newScale = self.zoomView.maximumZoomScale;
+            
+            //TODO: if doubletap is over a hotspot, get the rect of the hotspot.
+            
+            // otherwise, just zoom to the rect
+            CGRect zoomRect = [self _zoomRectForScale:newScale withCenter:[tap locationInView:self.zoomView]];
+            [self.zoomView zoomToRect:zoomRect animated:NO];
+        }
+    };
+    
+    void (^zoomCompletion)(BOOL) = ^(BOOL finished) {
+        [self.zoomView.delegate scrollViewDidEndZooming:self.zoomView withView:[self.zoomView.delegate viewForZoomingInScrollView:self.zoomView]  atScale:self.zoomView.zoomScale];
+    };
+    
+    //ios 7 bouncy anim, if available
+#ifdef NSFoundationVersionNumber_iOS_6_1
+    if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber_iOS_6_1)
+    {
+        NSTimeInterval duration = zoomingOut ? 0.30 : 0.40;
+        CGFloat damping = zoomingOut ? 0.9 : 0.8;
+        CGFloat initialVelocity = zoomingOut ? 0.9 : 0.75;
+        [UIView animateWithDuration:duration delay:0 usingSpringWithDamping:damping initialSpringVelocity:initialVelocity options:UIViewAnimationOptionBeginFromCurrentState animations:zoomAnimations completion:zoomCompletion];
+    }
+    else
+#endif
+    {
+        [UIView animateWithDuration:0.2 delay:0 options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionCurveEaseOut animations:zoomAnimations completion:zoomCompletion];
+    }
+    
+    
 }
 
 
@@ -641,43 +739,28 @@
     if (!_pageContentsContainer)
     {
         _pageContentsContainer = [UIView new];
-        
-//        _pageContentsContainer.backgroundColor = [UIColor colorWithRed:0 green:0 blue:1 alpha:0.5];
-        
-        
-        // Tap and Doubletap
-//        ETA_ShortTapGestureRecognizer* doubleTap = [[ETA_ShortTapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTapPageContainer:)];
-//        doubleTap.maxTapDelay = 0.4;
-//        UITapGestureRecognizer* doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTapPageContainer:)];
-//        doubleTap.numberOfTapsRequired = 2;
-//        [_pageContentsContainer addGestureRecognizer:doubleTap];
-//        
-//        UILongPressGestureRecognizer* longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongPressPageContainer:)];
-//        [_pageContentsContainer addGestureRecognizer:longPress];
-//        
-//        UITapGestureRecognizer* tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTapPageContainer:)];
-//        [tap requireGestureRecognizerToFail:doubleTap];
-//        [_pageContentsContainer addGestureRecognizer:tap];
-        
+//        _pageContentsContainer.backgroundColor = [UIColor colorWithRed:1.0 green:0 blue:0 alpha:0.1];
     }
     return _pageContentsContainer;
 }
 
-- (ETA_VersoSinglePageContentsView*) primaryPageContents
+- (ETA_VersoSinglePageContentsView*) versoPageContents
 {
-    if (!_primaryPageContents)
+    if (!_versoPageContents)
     {
-        _primaryPageContents = [ETA_VersoSinglePageContentsView new];
+        _versoPageContents = [ETA_VersoSinglePageContentsView new];
+//        _versoPageContents.backgroundColor = [UIColor colorWithRed:1.0 green:0 blue:0 alpha:0.1];
     }
-    return _primaryPageContents;
+    return _versoPageContents;
 }
-- (ETA_VersoSinglePageContentsView*) secondaryPageContents
+- (ETA_VersoSinglePageContentsView*) rectoPageContents
 {
-    if (!_secondaryPageContents)
+    if (!_rectoPageContents)
     {
-        _secondaryPageContents = [ETA_VersoSinglePageContentsView new];
+        _rectoPageContents = [ETA_VersoSinglePageContentsView new];
+//        _rectoPageContents.backgroundColor = [UIColor colorWithRed:1.0 green:0 blue:0 alpha:0.1];
     }
-    return _secondaryPageContents;
+    return _rectoPageContents;
 }
 
 @end

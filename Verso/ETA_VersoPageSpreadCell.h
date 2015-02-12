@@ -11,9 +11,11 @@
 @protocol ETA_VersoPageSpreadCellDelegate;
 
 typedef enum : NSUInteger {
-    ETA_VersoPageSpreadSide_Primary = 0,
-    ETA_VersoPageSpreadSide_Secondary = 1
+    ETA_VersoPageSpreadSide_Verso = 0,
+    ETA_VersoPageSpreadSide_Recto = 1,
 } ETA_VersoPageSpreadSide;
+
+
 
 
 
@@ -22,13 +24,18 @@ typedef enum : NSUInteger {
 @property (nonatomic, weak) id<ETA_VersoPageSpreadCellDelegate> delegate;
 
 @property (nonatomic, strong, readonly) UIScrollView* zoomView;
+@property (nonatomic, strong, readonly) UITapGestureRecognizer* tapGesture;
+@property (nonatomic, strong, readonly) UITapGestureRecognizer* doubleTapGesture;
+@property (nonatomic, strong, readonly) UILongPressGestureRecognizer* longPressGesture;
+
 
 - (BOOL) anyImagesLoaded;
 - (BOOL) allImagesLoaded;
 
-- (void) setPageIndex:(NSInteger)pageIndex forSide:(ETA_VersoPageSpreadSide)pageSide;
+- (void) setVersoPageIndex:(NSUInteger)versoPageIndex rectoPageIndex:(NSUInteger)rectoPageIndex animated:(BOOL)animated;
 - (NSInteger) pageIndexForSide:(ETA_VersoPageSpreadSide)pageSide;
 
+- (void) setPageNumberLabelText:(NSAttributedString*)text color:(UIColor*)color forSide:(ETA_VersoPageSpreadSide)pageSide;
 
 - (void) setImage:(UIImage*)image isZoomImage:(BOOL)isZoomImage forSide:(ETA_VersoPageSpreadSide)pageSide animated:(BOOL)animated;
 
@@ -38,13 +45,11 @@ typedef enum : NSUInteger {
 
 @property (nonatomic, assign) BOOL showHotspots;
 - (void) setShowHotspots:(BOOL)showHotspots animated:(BOOL)animated;
-- (void) setHotspotRects:(NSDictionary *)hotspotRects forSide:(ETA_VersoPageSpreadSide)pageSide;
+- (void) setHotspotRects:(NSDictionary *)hotspotRects forSide:(ETA_VersoPageSpreadSide)pageSide normalizedByWidth:(BOOL)normalizedByWidth;
 
 
 
 
-@property (nonatomic, assign) BOOL singlePageMode;
-- (void) setSinglePageMode:(BOOL)singlePageMode animated:(BOOL)animated;
 
 
 /**
@@ -80,8 +85,8 @@ typedef enum : NSUInteger {
 - (void) versoPageSpreadWillBeginZooming:(ETA_VersoPageSpreadCell *)pageSpreadCell;
 - (void) versoPageSpreadDidEndZooming:(ETA_VersoPageSpreadCell *)pageSpreadCell;
 
-- (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didReceiveTapAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide atNormalizedPoint:(CGPoint)normalizedPoint;
-- (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didReceiveLongPressAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide atNormalizedPoint:(CGPoint)normalizedPoint;
+- (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didReceiveTapAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
+- (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didReceiveLongPressAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
 
 @end
 

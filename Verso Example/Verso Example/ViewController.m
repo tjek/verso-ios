@@ -178,27 +178,21 @@
 
 #pragma mark - Verso Delegate
 
-- (void)versoPagedView:(ETA_VersoPagedView *)versoPagedView didTapLocation:(CGPoint)tapLocation normalizedPoint:(CGPoint)normalizedPoint onPageIndex:(NSUInteger)pageIndex
+- (void)versoPagedView:(ETA_VersoPagedView *)versoPagedView didTapLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys
 {
     // are we on the first page, and did we tap inside a hotspot rect? Go to that page
     if (pageIndex == 0)
     {
-        NSDictionary* planetRects = [self planetOverviewHotspotRects];
-        __block BOOL tappedHotspot = NO;
-        [planetRects enumerateKeysAndObjectsUsingBlock:^(id key, NSValue* rectValue, BOOL *stop) {
-            if (CGRectContainsPoint(rectValue.CGRectValue, normalizedPoint))
+        NSString* planetKey = [hotspotKeys firstObject];
+        if (planetKey)
+        {
+            NSUInteger planetPageIndex = [self pageIndexForPlanetKey:planetKey];
+            if (planetPageIndex != NSNotFound)
             {
-                NSUInteger planetPageIndex = [self pageIndexForPlanetKey:key];
-                if (planetPageIndex != NSNotFound)
-                    [versoPagedView goToPageIndex:planetPageIndex animated:YES];
-                
-                tappedHotspot = YES;
-                *stop = YES;
+                [versoPagedView goToPageIndex:planetPageIndex animated:YES];
                 return;
             }
-        }];
-        if (tappedHotspot == YES)
-            return;
+        }
     }
     
     // tap on right side - go to next page

@@ -39,6 +39,7 @@
 
 - (void)addSubviews
 {
+    [self addSubview:self.pageNumberLabel];
     [self addSubview:self.imageView];
     
     [self addSubview:self.hotspotContainerView];
@@ -47,6 +48,20 @@
 - (void)layoutSubviews
 {
     [super layoutSubviews];
+    
+    CGFloat maxWidth = CGRectGetWidth(self.bounds)/3;
+    CGSize fittingSize = [self.pageNumberLabel sizeThatFits:CGSizeMake(maxWidth, 999)];
+    if (fittingSize.width > 0 && fittingSize.width > maxWidth)
+    {
+        fittingSize.height *= (maxWidth / fittingSize.width);
+        fittingSize.width = maxWidth;
+    }
+    
+    CGRect labelFrame = CGRectZero;
+    labelFrame.size = fittingSize;
+    labelFrame.origin = CGPointMake(CGRectGetMidX(self.bounds)-labelFrame.size.width/2,
+                                    CGRectGetMidY(self.bounds)-labelFrame.size.height/2);
+    self.pageNumberLabel.frame = labelFrame;
     
     [self layoutHotspots];
 }
@@ -151,17 +166,20 @@
 {
     @synchronized(self.hotspotRects)
     {
-//        CGSize contentSize = self.intrinsicContentSize;
-//        CGFloat widthByHeight = 1.0;
-//        if (contentSize.height != UIViewNoIntrinsicMetric && contentSize.width != UIViewNoIntrinsicMetric && contentSize.width > 0 && contentSize.height > 0)
-//        {
-//            widthByHeight = contentSize.width / contentSize.height;
-//        }
-        
         CGSize scaledSize = self.hotspotContainerView.bounds.size;
-//        if (CGSizeEqualToSize(scaledSize, CGSizeZero))
-//            scaledSize = CGSizeMake(1, 1);
-//        scaledSize.height *= widthByHeight;
+        
+        // if the height goes from 0->[aspect ratio], change the scaled size to be normalized so height == width
+        if (self.hotspotsNormalizedByWidth)
+        {
+            CGSize contentSize = self.intrinsicContentSize;
+            
+            if (contentSize.height != UIViewNoIntrinsicMetric && contentSize.width != UIViewNoIntrinsicMetric && contentSize.width > 0 && contentSize.height > 0)
+            {
+                CGFloat widthByHeight = contentSize.width / contentSize.height;
+                scaledSize.height *= widthByHeight;
+            }
+        }
+        
         
         
         [self.hotspotRectViews enumerateKeysAndObjectsUsingBlock:^(id key, UIView* hotspotView, BOOL *stop) {
@@ -181,6 +199,35 @@
     }
 }
 
+
+- (NSArray*) hotspotKeysAtPoint:(CGPoint)point
+{
+    CGSize contentSize = self.hotspotContainerView.bounds.size;
+    
+    if (contentSize.height == UIViewNoIntrinsicMetric || contentSize.width == UIViewNoIntrinsicMetric || contentSize.width <= 0 || contentSize.height <= 0)
+    {
+        return nil;
+    }
+    
+    // normalize the point
+    CGPoint normalizedPoint = (CGPoint){
+        .x = point.x / contentSize.width,
+        .y = point.y / (self.hotspotsNormalizedByWidth ? contentSize.width : contentSize.height)
+    };
+    
+    
+    NSMutableArray* hitKeys = [NSMutableArray array];
+    [self.hotspotRects enumerateKeysAndObjectsUsingBlock:^(id key, NSValue* rectValue, BOOL *stop) {
+        CGRect hotspotRect = rectValue.CGRectValue;
+        if (CGRectContainsPoint(hotspotRect, normalizedPoint))
+        {
+            [hitKeys addObject:key];
+        }
+    }];
+    return hitKeys;
+}
+
+
 #pragma mark - Views
 
 - (UIImageView*) imageView
@@ -192,6 +239,27 @@
         _imageView.contentMode = UIViewContentModeScaleAspectFit;
     }
     return _imageView;
+}
+
+
+- (UILabel*) pageNumberLabel
+{
+    if (!_pageNumberLabel)
+    {
+        _pageNumberLabel = [UILabel new];
+        _pageNumberLabel.backgroundColor = [UIColor clearColor];
+        _pageNumberLabel.font = [UIFont boldSystemFontOfSize:100];
+        _pageNumberLabel.textAlignment = NSTextAlignmentCenter;
+        _pageNumberLabel.minimumScaleFactor = 0.01;
+        _pageNumberLabel.adjustsFontSizeToFitWidth = YES;
+        _pageNumberLabel.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
+        
+        _pageNumberLabel.alpha = 1.0;
+        [UIView animateWithDuration:1.0 delay:0 options:UIViewAnimationOptionRepeat | UIViewAnimationOptionAutoreverse | UIViewAnimationOptionCurveEaseIn | UIViewAnimationOptionOverrideInheritedDuration animations:^{
+            _pageNumberLabel.alpha = 0.2;
+        } completion:nil];
+    }
+    return _pageNumberLabel;
 }
 
 
