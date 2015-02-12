@@ -33,6 +33,14 @@
     return UIStatusBarStyleLightContent;
 }
 
+- (void) viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self.pagedView setSinglePageMode:[self _shouldBeSinglePageMode]
+                             animated:YES];
+}
+
 - (void) viewDidAppear:(BOOL)animated
 {
     [UIView animateWithDuration:0.5 animations:^{
@@ -40,16 +48,11 @@
     }];
 }
 
-- (void) viewWillLayoutSubviews
+- (void) dealloc
 {
-    [super viewWillLayoutSubviews];
-    
-    // Show two images if the view is going landscape
-    BOOL isLandscape = self.view.bounds.size.width > self.view.bounds.size.height;
-    [self.pagedView setSinglePageMode:!isLandscape];
+    // destroy the reader when the view controller is deallocated
+    _pagedView = nil;
 }
-
-
 
 
 - (ETA_VersoPagedView*) pagedView
@@ -66,6 +69,27 @@
     }
     return _pagedView;
 }
+
+
+
+
+#pragma mark Layout
+
+- (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
+{
+    [super didRotateFromInterfaceOrientation:fromInterfaceOrientation];
+    
+    [self.pagedView setSinglePageMode:[self _shouldBeSinglePageMode]
+                             animated:YES];
+}
+
+- (BOOL) _shouldBeSinglePageMode
+{
+    BOOL screenIsLandscape = self.interfaceOrientation == UIDeviceOrientationLandscapeRight || self.interfaceOrientation == UIDeviceOrientationLandscapeLeft;
+    return !screenIsLandscape;
+}
+
+
 
 
 

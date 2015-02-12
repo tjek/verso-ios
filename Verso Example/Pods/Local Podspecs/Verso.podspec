@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
     s.name         = "Verso"
-    s.version      = "0.0.1"
+    s.version      = "0.1"
     s.summary      = "A multi-paged image viewer for iOS"
     
     s.homepage     = "https://github.com/eTilbudsavis/ios-verso"
