@@ -112,7 +112,19 @@
     _showHotspots = showHotspots;
     
     [UIView animateWithDuration:animated ? 0.2 : 0 animations:^{
-        self.hotspotContainerView.alpha = showHotspots ? 1.0 : 0.0;
+        [self.hotspotRectViews enumerateKeysAndObjectsUsingBlock:^(id key, UIView* view, BOOL *stop) {
+            view.alpha = showHotspots ? 1.0 : 0.0;
+        }];
+    }];
+}
+
+- (void) showHotspots:(BOOL)showHotspots withKeys:(NSArray*)hotspotKeys
+{
+    if (!hotspotKeys.count)
+        return;
+    [[self.hotspotRectViews objectsForKeys:hotspotKeys notFoundMarker:NSNull.null] enumerateObjectsUsingBlock:^(UIView* view, NSUInteger idx, BOOL *stop) {
+        if (![view isEqual:NSNull.null])
+            view.alpha = showHotspots ? 1.0 : 0.0;
     }];
 }
 
@@ -147,12 +159,17 @@
             }
             
             UIView* hotspotView = [UIView new];
-            hotspotView.backgroundColor = [UIColor colorWithRed:1 green:0 blue:0 alpha:0.1];
-            hotspotView.layer.borderColor = [UIColor colorWithRed:1 green:0 blue:0 alpha:0.2].CGColor;
+            hotspotView.backgroundColor = [UIColor colorWithRed:1 green:1 blue:1 alpha:0.25];
+            
+            hotspotView.layer.cornerRadius = 10;
+            
+            hotspotView.layer.borderColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0.2].CGColor;
             hotspotView.layer.borderWidth = 1.0/UIScreen.mainScreen.scale;
             
             hotspotView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
             
+            hotspotView.alpha = self.showHotspots ? 1.0 : 0.0;
+            hotspotView.userInteractionEnabled = NO;
             self.hotspotRectViews[key] = hotspotView;
 
             [self.hotspotContainerView addSubview:hotspotView];
@@ -227,6 +244,21 @@
     return hitKeys;
 }
 
+- (NSArray*) hotspotViewsForKeys:(NSArray*)hotspotKeys
+{
+    if (!hotspotKeys.count)
+        return @[];
+    
+    NSMutableArray* views = [NSMutableArray arrayWithCapacity:hotspotKeys.count];
+    
+    [self.hotspotRectViews enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+        if ([hotspotKeys containsObject:key])
+            [views addObject:obj];
+    }];
+    
+    return views;
+}
+
 
 #pragma mark - Views
 
@@ -269,7 +301,6 @@
     {
         _hotspotContainerView = [[UIView alloc] initWithFrame:self.bounds];
         _hotspotContainerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        _hotspotContainerView.alpha = self.showHotspots ? 1.0 : 0.0;
     }
     return _hotspotContainerView;
 }

@@ -347,6 +347,15 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     return self.collectionView.panGestureRecognizer;
 }
 
+
+
+- (NSArray*) getHotspotViewsAtLocation:(CGPoint)location
+{
+    ETA_VersoPageSpreadCell* pageSpread = [self _currentPageSpreadCell];
+    return [pageSpread hotspotViewsAtPoint:location];
+}
+
+
 #pragma mark - Private Methods
 
 
@@ -718,6 +727,25 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 
 
+- (void) didBeginTouchingLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys
+{
+    if ([self.delegate respondsToSelector:@selector(versoPagedView:didBeginTouchingLocation:onPageIndex:hittingHotspotsWithKeys:)])
+    {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate versoPagedView:self didBeginTouchingLocation:tapLocation onPageIndex:pageIndex hittingHotspotsWithKeys:hotspotKeys];
+        });
+    }
+}
+- (void) didFinishTouchingLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys
+{
+    if ([self.delegate respondsToSelector:@selector(versoPagedView:didFinishTouchingLocation:onPageIndex:hittingHotspotsWithKeys:)])
+    {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate versoPagedView:self didFinishTouchingLocation:tapLocation onPageIndex:pageIndex hittingHotspotsWithKeys:hotspotKeys];
+        });
+    }
+}
+
 - (void) didTapLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys
 {
     if ([self.delegate respondsToSelector:@selector(versoPagedView:didTapLocation:onPageIndex:hittingHotspotsWithKeys:)])
@@ -869,6 +897,28 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     [self didZoom:zoomScale];
 }
 
+
+- (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didFinishTouchingAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide hittingHotspotsWithKeys:(NSArray *)hotspotKeys
+{
+    NSInteger pageIndex = [pageSpreadCell pageIndexForSide:pageSide];
+    if (pageIndex < 0)
+        return;
+    
+    CGPoint locationInReader = [self convertPoint:locationInPageView fromView:pageSpreadCell];
+    
+    [self didFinishTouchingLocation:locationInReader onPageIndex:pageIndex hittingHotspotsWithKeys:hotspotKeys];
+}
+
+- (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didBeginTouchingAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide hittingHotspotsWithKeys:(NSArray *)hotspotKeys
+{
+    NSInteger pageIndex = [pageSpreadCell pageIndexForSide:pageSide];
+    if (pageIndex < 0)
+        return;
+    
+    CGPoint locationInReader = [self convertPoint:locationInPageView fromView:pageSpreadCell];
+    
+    [self didBeginTouchingLocation:locationInReader onPageIndex:pageIndex hittingHotspotsWithKeys:hotspotKeys];
+}
 
 - (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didReceiveTapAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide hittingHotspotsWithKeys:(NSArray *)hotspotKeys
 {

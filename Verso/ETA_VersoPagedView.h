@@ -89,6 +89,8 @@
 - (BOOL) isShowingOutroView;
 
 
+- (NSArray*) getHotspotViewsAtLocation:(CGPoint)location;
+
 @end
 
 
@@ -134,6 +136,10 @@
 - (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView beganScrollingFrom:(NSRange)currentPageIndexRange;
 - (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView beganScrollingIntoNewPageIndexRange:(NSRange)newPageIndexRange from:(NSRange)previousPageIndexRange;
 - (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView finishedScrollingIntoNewPageIndexRange:(NSRange)newPageIndexRange from:(NSRange)previousPageIndexRange;
+
+
+- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didBeginTouchingLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
+- (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didFinishTouchingLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
 
 - (void) versoPagedView:(ETA_VersoPagedView *)versoPagedView didTapLocation:(CGPoint)tapLocation onPageIndex:(NSUInteger)pageIndex hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
 
