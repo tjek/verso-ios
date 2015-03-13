@@ -76,7 +76,7 @@
     
     
     self.touchGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didTouch:)];
-    self.touchGesture.minimumPressDuration = 0.01;
+    self.touchGesture.minimumPressDuration = 0.3;
     self.touchGesture.delegate = self;
     self.touchGesture.cancelsTouchesInView = NO;
     self.touchGesture.delaysTouchesEnded = NO;
