@@ -1394,8 +1394,9 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     @synchronized(self.imageFetchOpsByURL)
     {
-        for (id<SDWebImageOperation> fetchOp in self.imageFetchOpsByURL)
-             [fetchOp cancel];
+        [self.imageFetchOpsByURL enumerateKeysAndObjectsUsingBlock:^(id key, id<SDWebImageOperation> fetchOp, BOOL *stop) {
+            [fetchOp cancel];
+        }];
              
         [self.imageFetchOpsByURL removeAllObjects];
         [self.imageFetchURLsByPageImageID removeAllObjects];
