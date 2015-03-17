@@ -31,7 +31,9 @@
 @property (nonatomic, strong) UICollectionView* collectionView;
 
 @property (nonatomic, strong) SDWebImageManager* cachedImageDownloader;
-@property (nonatomic, strong) NSMutableSet* fetchingURLs;
+@property (nonatomic, strong) NSMutableDictionary* imageFetchURLsByPageImageID;
+@property (nonatomic, strong) NSMutableDictionary* imageFetchOpsByURL;
+
 
 @property (nonatomic, strong) UIView* outroView;
 @property (nonatomic, assign) BOOL isShowingOutroView;
@@ -112,6 +114,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 - (void) dealloc
 {
+    [self cancelAllImageFetchOps];
+    
     _collectionView.delegate = nil;
     _collectionView.dataSource = nil;
     _delegate = nil;
@@ -644,10 +648,25 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
             [self.delegate versoPagedView:self finishedScrollingIntoNewPageIndexRange:newPageIndexRange from:previousPageIndexRange];
         }
         
-        // do the prefetching around the newly visible page
+        NSRange visiblePageIndexRange = [self visiblePageIndexRange];
         
-        NSUInteger pagesBehindToPrefetch = 3;
-        NSUInteger startPrefetchBeforeIndex = self.visiblePageIndexRange.location;
+        // no prefetch if not valid page
+        if (visiblePageIndexRange.location == NSNotFound || visiblePageIndexRange.length == 0)
+            return;
+        
+        // add the current cell to the start of the request queue
+        NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:visiblePageIndexRange.location inSinglePageMode:self.singlePageMode];
+        [self _startFetchingImagesForPageView:[self _cellForPageSpreadIndex:currSpreadIndex]
+                                  atIndexPath:[NSIndexPath indexPathForItem:currSpreadIndex inSection:0]
+                                    zoomImage:NO
+                                 onlyIfCached:NO];
+        
+
+        
+        
+        // do the prefetching around the newly visible page
+        NSInteger pagesBehindToPrefetch = 3;
+        NSInteger startPrefetchBeforeIndex = visiblePageIndexRange.location;
         if ([self.delegate respondsToSelector:@selector(versoPagedView:numberOfPagesAheadToPrefetch:)])
         {
             pagesBehindToPrefetch = [self.delegate versoPagedView:self numberOfPagesBehindToPrefetch:startPrefetchBeforeIndex];
@@ -659,9 +678,10 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         }
         
         
+        
     
-        NSUInteger pagesAheadToPrefetch = 3;
-        NSUInteger startPrefetchAfterIndex = self.visiblePageIndexRange.location + self.visiblePageIndexRange.length - 1;
+        NSInteger pagesAheadToPrefetch = 3;
+        NSInteger startPrefetchAfterIndex = visiblePageIndexRange.location + visiblePageIndexRange.length - 1;
         if ([self.delegate respondsToSelector:@selector(versoPagedView:numberOfPagesAheadToPrefetch:)])
         {
             pagesAheadToPrefetch = [self.delegate versoPagedView:self numberOfPagesAheadToPrefetch:startPrefetchAfterIndex];
@@ -671,6 +691,14 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         {
             [self _prefetchViewImagesFromIndex:startPrefetchAfterIndex+1 toIndex:startPrefetchAfterIndex+pagesAheadToPrefetch];
         }
+        
+        
+        
+        NSInteger firstActiveIndex = MAX(startPrefetchBeforeIndex-pagesBehindToPrefetch, 0);
+        NSInteger lastActiveIndex = MAX(startPrefetchAfterIndex+pagesAheadToPrefetch, 0);
+        
+        // cancel fetching requests outside of the prefetch range
+        [self cancelImageFetchOpsNotOnPageIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(firstActiveIndex, (lastActiveIndex-firstActiveIndex)+1)]];
     });
 }
 
@@ -881,15 +909,26 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     [self didEndZooming:pageView.zoomScale];
     
+    // we zoomed out, so cancel any zoom image fetches
     if (pageView.zoomScale <= 1.0)
+    {
+        NSInteger versoPageIndex = [pageView pageIndexForSide:ETA_VersoPageSpreadSide_Verso];
+        if (versoPageIndex > 0 && versoPageIndex != NSNotFound)
+            [self cancelImageFetchOpForPageImageID:[self pageImageIDForPageIndex:versoPageIndex isZoomImage:YES]];
+        
+        NSInteger rectoPageIndex = [pageView pageIndexForSide:ETA_VersoPageSpreadSide_Recto];
+        if (rectoPageIndex > 0 && rectoPageIndex != NSNotFound)
+            [self cancelImageFetchOpForPageImageID:[self pageImageIDForPageIndex:rectoPageIndex isZoomImage:YES]];
+
         return;
+    }
     
     NSIndexPath* indexPath = [self.collectionView indexPathForCell:pageView];
     if (!indexPath)
         return;
 
 
-    [self _startFetchingImagesForPageView:pageView atIndexPath:indexPath zoomImage:YES];
+    [self _startFetchingImagesForPageView:pageView atIndexPath:indexPath zoomImage:YES onlyIfCached:NO];
 }
 
 - (void) versoPageSpread:(ETA_VersoPageSpreadCell *)pageView didZoom:(CGFloat)zoomScale
@@ -1005,8 +1044,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     [pageView.tapGesture requireGestureRecognizerToFail:self.collectionView.panGestureRecognizer];
     
     
-    [self _startFetchingImagesForPageView:pageView atIndexPath:[NSIndexPath indexPathForItem:spreadIndex inSection:0] zoomImage:NO];
-    
+    [self _startFetchingImagesForPageView:pageView atIndexPath:[NSIndexPath indexPathForItem:spreadIndex inSection:0] zoomImage:NO onlyIfCached:YES];
+
     pageView.delegate = self;
 }
 
@@ -1216,7 +1255,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     for (NSUInteger idx=fromIndex; idx<=toIndex; idx++)
     {
         NSURL* url = [self imageURLForPageIndex:idx withMaxSize:CGSizeZero isZoomImage:NO];
-        [self _startFetchingImageAtURL:url forPageView:nil atPageIndex:idx isZoomImage:NO];
+        [self _startFetchingImageAtURL:url forPageView:nil atPageIndex:idx isZoomImage:NO onlyIfCached:NO];
     }
 }
 
@@ -1224,7 +1263,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 
 
-- (void) _startFetchingImagesForPageView:(ETA_VersoPageSpreadCell *)pageView atIndexPath:(NSIndexPath*)indexPath zoomImage:(BOOL)zoomImage
+- (void) _startFetchingImagesForPageView:(ETA_VersoPageSpreadCell *)pageView atIndexPath:(NSIndexPath*)indexPath zoomImage:(BOOL)zoomImage onlyIfCached:(BOOL)onlyIfCached
 {
     if (!indexPath)
         return;
@@ -1243,64 +1282,217 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     if (versoPageIndex != NSNotFound && (!zoomImage || ![pageView isShowingZoomImageForSide:ETA_VersoPageSpreadSide_Verso]))
     {
         NSURL* primaryURL = [self imageURLForPageIndex:versoPageIndex withMaxSize:maxPageSize isZoomImage:zoomImage];
-        [self _startFetchingImageAtURL:primaryURL forPageView:pageView atPageIndex:versoPageIndex isZoomImage:zoomImage];
+        [self _startFetchingImageAtURL:primaryURL forPageView:pageView atPageIndex:versoPageIndex isZoomImage:zoomImage onlyIfCached:onlyIfCached];
     }
     
     if (rectoPageIndex != NSNotFound && (!zoomImage || ![pageView isShowingZoomImageForSide:ETA_VersoPageSpreadSide_Recto]))
     {
         NSURL* secondaryURL = [self imageURLForPageIndex:rectoPageIndex withMaxSize:maxPageSize isZoomImage:zoomImage];
-        [self _startFetchingImageAtURL:secondaryURL forPageView:pageView atPageIndex:rectoPageIndex isZoomImage:zoomImage];
+        [self _startFetchingImageAtURL:secondaryURL forPageView:pageView atPageIndex:rectoPageIndex isZoomImage:zoomImage onlyIfCached:onlyIfCached];
     }
 }
 
 
-- (void) _startFetchingImageAtURL:(NSURL*)url forPageView:(ETA_VersoPageSpreadCell*)pageView atPageIndex:(NSUInteger)pageIndex isZoomImage:(BOOL)isZoomImage
+- (void) _startFetchingImageAtURL:(NSURL*)url forPageView:(ETA_VersoPageSpreadCell*)pageView atPageIndex:(NSUInteger)pageIndex isZoomImage:(BOOL)isZoomImage onlyIfCached:(BOOL)onlyIfCached
 {
     if (!url)
     {
         return;
     }
     
+    BOOL haveCachedVersion = [self.cachedImageDownloader cachedImageExistsForURL:url];
+    
     // dont do prefetch if already cached
-    if (!pageView && [self.cachedImageDownloader cachedImageExistsForURL:url])
+    if (!pageView && haveCachedVersion)
     {
         return;
     }
     
-    if ([self.fetchingURLs containsObject:url])
+    // we only want to fetch if it's cached, and it isnt
+    if (onlyIfCached && !haveCachedVersion)
     {
         return;
     }
     
-    if (!self.fetchingURLs)
-        self.fetchingURLs = [NSMutableSet set];
-    
-    [self.fetchingURLs addObject:url];
+    NSString* pageImageID = [self pageImageIDForPageIndex:pageIndex isZoomImage:isZoomImage];
     
     
-    NSString* imageID = [NSString stringWithFormat:@"%tu-%@%@", pageIndex, isZoomImage ? @"zoom":@"view", pageView?@"":@"-prefetch"];
-//    NSLog(@"[ImgDL] Page %@ Start%@...", imageID, pageView ? @"" : @" Prefetch");
+    NSURL* pendingFetchURL = [self pendingFetchURLForPageImageID:pageImageID];
+    // we are already fetching for this page
+    if (pendingFetchURL)
+    {
+        // are we already fetching for this URL on this page... if so dont bother continuing
+        if ([pendingFetchURL isEqual:url])
+        {
+            return;
+        }
+        // the url we are fetching for this page is different - cancel previous requests
+        else
+        {
+            [self cancelImageFetchOpForPageImageID:pageImageID];
+        }
+    }
+    
+
     
     __weak __typeof(self) weakSelf = self;
     SDWebImageDownloaderProgressBlock progressBlock = nil;
 //    SDWebImageDownloaderProgressBlock progressBlock = ^(NSInteger receivedSize, NSInteger expectedSize) {
 ////        NSLog(@"[ImgDL] %tu Progress %tu/%tu", pageIndex, receivedSize, expectedSize);
 //    };
-    
+    __block BOOL alreadyFetched = NO;
     SDWebImageCompletionWithFinishedBlock completionBlock = ^(UIImage *image, NSError *error, SDImageCacheType cacheType, BOOL finished, NSURL *imageURL) {
+        alreadyFetched = YES;
         if (!image)
         {
-            NSLog(@"[ImgDL] Page %@ Error %@", imageID, error);
+            NSLog(@"[ImgDL] Page %@ Error %@", pageImageID, error);
         }
-        [weakSelf.fetchingURLs removeObject:url];
+//        else
+//        {
+//            NSLog(@"[ImgDL] Page %@ Success!", pageImageID);
+//        }
+        [weakSelf cancelImageFetchOpForPageImageID:pageImageID];
         [weakSelf _updateImage:image forPageView:pageView atPageIndex:pageIndex isZoomImage:isZoomImage];
     };
     
     
     SDWebImageOptions options = 0;
     
+//    NSLog(@"[ImgDL] Page %@ Start", pageImageID);
     // start a download operation for this url
-    [self.cachedImageDownloader downloadImageWithURL:url options:options progress:progressBlock completed:completionBlock];
+    id <SDWebImageOperation> fetchOp = [self.cachedImageDownloader downloadImageWithURL:url options:options progress:progressBlock completed:completionBlock];
+    if (!alreadyFetched)
+        [self addImageFetchOp:fetchOp withURL:url forPageImageID:pageImageID];
+    
+}
+
+
+
+
+
+
+- (NSMutableDictionary*) imageFetchURLsByPageImageID
+{
+    if (!_imageFetchURLsByPageImageID)
+    {
+        _imageFetchURLsByPageImageID = [NSMutableDictionary new];
+    }
+    return _imageFetchURLsByPageImageID;
+}
+- (NSMutableDictionary*) imageFetchOpsByURL
+{
+    if (!_imageFetchOpsByURL)
+    {
+        _imageFetchOpsByURL = [NSMutableDictionary new];
+    }
+    return _imageFetchOpsByURL;
+}
+
+
+
+- (void) cancelAllImageFetchOps
+{
+    @synchronized(self.imageFetchOpsByURL)
+    {
+        for (id<SDWebImageOperation> fetchOp in self.imageFetchOpsByURL)
+             [fetchOp cancel];
+             
+        [self.imageFetchOpsByURL removeAllObjects];
+        [self.imageFetchURLsByPageImageID removeAllObjects];
+    }
+}
+
+
+- (void) cancelImageFetchOpsNotOnPageIndexes:(NSIndexSet*)pageIndexes
+{
+    if (!pageIndexes)
+        return;
+    
+    @synchronized(self.imageFetchOpsByURL)
+    {
+        NSArray* allPageImageIDs = [self.imageFetchURLsByPageImageID allKeys];
+        
+        // nothing to cancel
+        if (!allPageImageIDs.count)
+            return;
+        
+        // add both zoom and view image ids to the passing set
+        NSMutableSet* passingPageImageIDs = [NSMutableSet setWithCapacity:pageIndexes.count*2];
+        [pageIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+            [passingPageImageIDs addObject:[self pageImageIDForPageIndex:idx isZoomImage:YES]];
+            [passingPageImageIDs addObject:[self pageImageIDForPageIndex:idx isZoomImage:NO]];
+        }];
+        
+        for (NSString* pageImageID in allPageImageIDs)
+        {
+            if (![passingPageImageIDs containsObject:pageImageID])
+            {
+                [self cancelImageFetchOpForPageImageID:pageImageID];
+            }
+        }
+    }
+}
+- (void) cancelImageFetchOpsForPageIndexes:(NSIndexSet*)pageIndexes areZoomImages:(BOOL)zoomImages
+{
+    if (!pageIndexes)
+        return;
+    
+    [pageIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+        NSString* pageImageID = [self pageImageIDForPageIndex:idx isZoomImage:zoomImages];
+        
+        [self cancelImageFetchOpForPageImageID:pageImageID];
+    }];
+}
+
+
+- (NSString*) pageImageIDForPageIndex:(NSUInteger)pageIndex isZoomImage:(BOOL)isZoomImage
+{
+    return [NSString stringWithFormat:@"%@-%@", @(pageIndex), isZoomImage ? @"zoom":@"view"];
+}
+
+- (void) addImageFetchOp:(id<SDWebImageOperation>)fetchOp withURL:(NSURL*)url forPageImageID:(NSString*)pageImageID
+{
+    if (!pageImageID || !fetchOp || !url)
+        return;
+    
+    @synchronized(self.imageFetchOpsByURL)
+    {
+        // cancel and remove any pending fetches on this page index
+        [self cancelImageFetchOpForPageImageID:pageImageID];
+        
+        self.imageFetchURLsByPageImageID[pageImageID] = url;
+        self.imageFetchOpsByURL[url] = fetchOp;
+    }
+}
+
+- (void) cancelImageFetchOpForPageImageID:(NSString*)pageImageID
+{
+    if (!pageImageID)
+        return;
+    
+    @synchronized(self.imageFetchOpsByURL)
+    {
+        NSURL* existingFetchURL = self.imageFetchURLsByPageImageID[pageImageID];
+        if (existingFetchURL)
+        {
+            id<SDWebImageOperation> fetchOp = self.imageFetchOpsByURL[existingFetchURL];
+            [fetchOp cancel];
+            
+            [self.imageFetchOpsByURL removeObjectForKey:existingFetchURL];
+            [self.imageFetchURLsByPageImageID removeObjectForKey:pageImageID];
+        }
+    }
+}
+
+- (NSURL*) pendingFetchURLForPageImageID:(NSString*)pageImageID
+{
+    if (!pageImageID)
+        return nil;
+    
+    @synchronized(self.imageFetchOpsByURL)
+    {
+        return self.imageFetchURLsByPageImageID[pageImageID];
+    }
 }
 
 @end
