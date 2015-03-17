@@ -632,6 +632,10 @@
         ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
         ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
         
+        // no touch if no image
+        if (!pageContentsView.imageView.image)
+            return;
+
         NSArray* hotspotKeys = (pageContentsView.imageView.image) ? [pageContentsView hotspotKeysAtPoint:[touch locationInView:pageContentsView]] : nil;
         
         
@@ -663,6 +667,10 @@
     ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
     ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
     
+    // no tap if no image
+    if (!pageContentsView.imageView.image)
+        return;
+    
     NSArray* hotspotKeys = (pageContentsView.imageView.image) ? [pageContentsView hotspotKeysAtPoint:[tap locationInView:pageContentsView]] : nil;
     
     if ([self.delegate respondsToSelector:@selector(versoPageSpread:didReceiveTapAtPoint:onPageSide:hittingHotspotsWithKeys:)])
@@ -682,6 +690,10 @@
     
     ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
     ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
+
+    // no longpress if no image
+    if (!pageContentsView.imageView.image)
+        return;
     
     NSArray* hotspotKeys = [pageContentsView hotspotKeysAtPoint:[longPress locationInView:pageContentsView]];
     
