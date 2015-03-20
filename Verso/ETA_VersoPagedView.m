@@ -342,6 +342,10 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         
         percentageComplete = (CGFloat)(lastVisiblePageIndex) / (CGFloat)(numberOfPages - 1);
     }
+    else if (pageRange.location == NSNotFound && self.isShowingOutroView)
+    {
+        percentageComplete = 1.0;
+    }
     return percentageComplete;
 }
 
@@ -651,7 +655,11 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         
         // no prefetch if not valid page
         if (visiblePageIndexRange.location == NSNotFound || visiblePageIndexRange.length == 0)
+        {
+            if (self.numberOfPages > 0)
+                [self cancelImageFetchOpsNotOnPageIndexes:[NSIndexSet indexSetWithIndex:self.numberOfPages-1]];
             return;
+        }
         
         // add the current cell to the start of the request queue
         NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:visiblePageIndexRange.location inSinglePageMode:self.singlePageMode];
