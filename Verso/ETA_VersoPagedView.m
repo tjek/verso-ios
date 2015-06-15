@@ -161,7 +161,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     NSUInteger currSpreadCount = [self _numberOfPageSpreadsForPageCount:self.numberOfPages inSinglePageMode:singlePageMode];
     NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:singlePageMode];
-    NSLog(@"Set singlePageMode %@->%@ ... spread cnt: %@->%@  |  idx:%@->%@", @(prevSinglePageMode), @(_singlePageMode), @(prevSpreadCount), @(currSpreadCount), @(prevSpreadIndex), @(currSpreadIndex));
+//    NSLog(@"Set singlePageMode %@->%@ ... spread cnt: %@->%@  |  idx:%@->%@", @(prevSinglePageMode), @(_singlePageMode), @(prevSpreadCount), @(currSpreadCount), @(prevSpreadIndex), @(currSpreadIndex));
     
     self.numberOfPageSpreads = currSpreadCount;
     
