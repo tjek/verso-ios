@@ -108,7 +108,10 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     [super didMoveToSuperview];
     
-    [self reloadPages];
+    if (self.superview)
+    {
+        [self reloadPages];
+    }
 }
 
 
