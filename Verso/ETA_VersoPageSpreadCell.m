@@ -19,6 +19,7 @@
 @property (nonatomic, assign) NSInteger rectoPageIndex;
 
 @property (nonatomic, strong) UITapGestureRecognizer* tapGesture;
+@property (nonatomic, strong) UILongPressGestureRecognizer* touchGesture;
 @property (nonatomic, strong) UITapGestureRecognizer* doubleTapGesture;
 @property (nonatomic, strong) UILongPressGestureRecognizer* longPressGesture;
 
@@ -74,6 +75,13 @@
     [self.contentView addGestureRecognizer:self.tapGesture];
     
     
+    self.touchGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didTouch:)];
+    self.touchGesture.minimumPressDuration = 0.3;
+    self.touchGesture.delegate = self;
+    self.touchGesture.cancelsTouchesInView = NO;
+    self.touchGesture.delaysTouchesEnded = NO;
+    self.touchGesture.delaysTouchesBegan = NO;
+    [self.contentView addGestureRecognizer:self.touchGesture];
     
     [self.pageContentsContainer addSubview:self.rectoPageContents];
     [self.pageContentsContainer addSubview:self.versoPageContents];
@@ -442,6 +450,16 @@
     return allLoaded;
 }
 
+- (NSArray*) hotspotViewsAtPoint:(CGPoint)point
+{
+    ETA_VersoSinglePageContentsView* pageContents = [self _pageContentsViewForSide:[self _pageSideForPoint:point]];
+    
+    NSArray* hotspotKeys = [pageContents hotspotKeysAtPoint:[self convertPoint:point toView:pageContents]];
+    
+    return [pageContents hotspotViewsForKeys:hotspotKeys];
+}
+
+
 - (void) setShowHotspots:(BOOL)showHotspots
 {
     [self setShowHotspots:showHotspots animated:NO];
@@ -593,9 +611,48 @@
     {
         return YES;
     }
+    else if (gestureRecognizer == self.touchGesture)
+    {
+        return YES;
+    }
     else
     {
         return NO;
+    }
+}
+
+
+- (void) didTouch:(UILongPressGestureRecognizer*)touch
+{
+    if (touch.state == UIGestureRecognizerStateBegan || touch.state == UIGestureRecognizerStateEnded || touch.state == UIGestureRecognizerStateCancelled)
+    {
+        
+        CGPoint locationInPage = [touch locationInView:self];
+        
+        ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
+        ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
+        
+        // no touch if no image
+        if (!pageContentsView.imageView.image)
+            return;
+
+        NSArray* hotspotKeys = (pageContentsView.imageView.image) ? [pageContentsView hotspotKeysAtPoint:[touch locationInView:pageContentsView]] : nil;
+        
+        
+        if (touch.state == UIGestureRecognizerStateBegan)
+        {
+            if ([self.delegate respondsToSelector:@selector(versoPageSpread:didBeginTouchingAtPoint:onPageSide:hittingHotspotsWithKeys:)])
+            {
+                [self.delegate versoPageSpread:self didBeginTouchingAtPoint:locationInPage onPageSide:pageSide hittingHotspotsWithKeys:hotspotKeys];
+            }
+        }
+        else if (touch.state == UIGestureRecognizerStateCancelled || touch.state == UIGestureRecognizerStateEnded)
+        {
+            if ([self.delegate respondsToSelector:@selector(versoPageSpread:didFinishTouchingAtPoint:onPageSide:hittingHotspotsWithKeys:)])
+            {
+                [self.delegate versoPageSpread:self didFinishTouchingAtPoint:locationInPage onPageSide:pageSide hittingHotspotsWithKeys:hotspotKeys];
+            }
+        }
     }
 }
 
@@ -609,6 +666,10 @@
     
     ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
     ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
+    
+    // no tap if no image
+    if (!pageContentsView.imageView.image)
+        return;
     
     NSArray* hotspotKeys = (pageContentsView.imageView.image) ? [pageContentsView hotspotKeysAtPoint:[tap locationInView:pageContentsView]] : nil;
     
@@ -629,6 +690,10 @@
     
     ETA_VersoPageSpreadSide pageSide = [self _pageSideForPoint:locationInPage];
     ETA_VersoSinglePageContentsView* pageContentsView = [self _pageContentsViewForSide:pageSide];
+
+    // no longpress if no image
+    if (!pageContentsView.imageView.image)
+        return;
     
     NSArray* hotspotKeys = [pageContentsView hotspotKeysAtPoint:[longPress locationInView:pageContentsView]];
     

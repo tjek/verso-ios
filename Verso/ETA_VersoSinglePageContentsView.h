@@ -24,4 +24,6 @@
 
 - (NSArray*) hotspotKeysAtPoint:(CGPoint)point;
 
+- (NSArray*) hotspotViewsForKeys:(NSArray*)hotspotKeys;
+
 @end

@@ -48,6 +48,8 @@ typedef enum : NSUInteger {
 - (void) setHotspotRects:(NSDictionary *)hotspotRects forSide:(ETA_VersoPageSpreadSide)pageSide normalizedByWidth:(BOOL)normalizedByWidth;
 
 
+- (NSArray*) hotspotViewsAtPoint:(CGPoint)point;
+
 
 
 
@@ -85,6 +87,8 @@ typedef enum : NSUInteger {
 - (void) versoPageSpreadWillBeginZooming:(ETA_VersoPageSpreadCell *)pageSpreadCell;
 - (void) versoPageSpreadDidEndZooming:(ETA_VersoPageSpreadCell *)pageSpreadCell;
 
+- (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didBeginTouchingAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
+- (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didFinishTouchingAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
 - (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didReceiveTapAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
 - (void) versoPageSpread:(ETA_VersoPageSpreadCell*)pageSpreadCell didReceiveLongPressAtPoint:(CGPoint)locationInPageView onPageSide:(ETA_VersoPageSpreadSide)pageSide hittingHotspotsWithKeys:(NSArray*)hotspotKeys;
 
