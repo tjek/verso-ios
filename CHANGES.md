@@ -5,5 +5,5 @@ Verso Change Log
 * Bug Fixes
 * Highlight hotspots on touch
 
-### `v0.0.1` [2014-11-27]
+### `v0.1` [2014-11-27]
 * Initial Release
