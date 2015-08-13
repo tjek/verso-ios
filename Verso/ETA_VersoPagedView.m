@@ -161,10 +161,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     NSUInteger currSpreadCount = [self _numberOfPageSpreadsForPageCount:self.numberOfPages inSinglePageMode:singlePageMode];
     NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:singlePageMode];
-//    NSLog(@"Set singlePageMode %@->%@ ... spread cnt: %@->%@  |  idx:%@->%@", @(prevSinglePageMode), @(_singlePageMode), @(prevSpreadCount), @(currSpreadCount), @(prevSpreadIndex), @(currSpreadIndex));
-    
-    self.numberOfPageSpreads = currSpreadCount;
-    
+    NSLog(@"Set singlePageMode %@->%@ ... spread cnt: %@->%@ (%@ pages)  |  idx:%@->%@ %@", @(prevSinglePageMode), @(_singlePageMode), @(prevSpreadCount), @(currSpreadCount), @(self.numberOfPages), @(prevSpreadIndex), @(currSpreadIndex), ![NSThread isMainThread] ? @"(Not Main Thread!)" : @"");
     
     // first update the currently visible spread cell
     [CATransaction begin]; {
@@ -185,6 +182,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         [self.collectionView performBatchUpdates:^{
             __strong __typeof(weakSelf)strongSelf = weakSelf;
             
+            self.numberOfPageSpreads = currSpreadCount;
+            
             // insert or remove page spreads, and move the currently visible one
             if (currSpreadCount > prevSpreadCount)
             {
@@ -202,15 +201,21 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
             }
             else if (currSpreadCount < prevSpreadCount)
             {
+                BOOL shouldMove = YES;
                 NSMutableArray* indexPathsToDelete = [NSMutableArray array];
                 for (NSUInteger i = currSpreadCount; i < prevSpreadCount; i++)
                 {
+                    if (i == prevSpreadIndex || i==currSpreadIndex)
+                        shouldMove = NO;
+                    
                     [indexPathsToDelete addObject:[NSIndexPath indexPathForRow:i inSection:0]];
                 }
                 
-                [strongSelf.collectionView moveItemAtIndexPath:[NSIndexPath indexPathForItem:prevSpreadIndex inSection:0]
-                                                   toIndexPath:[NSIndexPath indexPathForItem:currSpreadIndex inSection:0]];
-                
+                if (shouldMove)
+                {
+                    [strongSelf.collectionView moveItemAtIndexPath:[NSIndexPath indexPathForItem:prevSpreadIndex inSection:0]
+                                                       toIndexPath:[NSIndexPath indexPathForItem:currSpreadIndex inSection:0]];
+                }
                 [strongSelf.collectionView deleteItemsAtIndexPaths:indexPathsToDelete];
             }
         } completion:^(BOOL finished) {
