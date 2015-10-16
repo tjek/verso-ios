@@ -1360,7 +1360,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     };
     
     
-    SDWebImageOptions options = 0;
+    SDWebImageOptions options = SDWebImageRetryFailed;
     
 //    NSLog(@"[ImgDL] Page %@ Start", pageImageID);
     // start a download operation for this url
