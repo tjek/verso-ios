@@ -196,26 +196,15 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
                 }
                 
                 [strongSelf.collectionView insertItemsAtIndexPaths:indexPathsToInsert];
-                [strongSelf.collectionView moveItemAtIndexPath:[NSIndexPath indexPathForItem:prevSpreadIndex inSection:0]
-                                                   toIndexPath:[NSIndexPath indexPathForItem:currSpreadIndex inSection:0]];
             }
             else if (currSpreadCount < prevSpreadCount)
             {
-                BOOL shouldMove = YES;
                 NSMutableArray* indexPathsToDelete = [NSMutableArray array];
                 for (NSUInteger i = currSpreadCount; i < prevSpreadCount; i++)
                 {
-                    if (i == prevSpreadIndex || i==currSpreadIndex)
-                        shouldMove = NO;
-                    
                     [indexPathsToDelete addObject:[NSIndexPath indexPathForRow:i inSection:0]];
                 }
                 
-                if (shouldMove)
-                {
-                    [strongSelf.collectionView moveItemAtIndexPath:[NSIndexPath indexPathForItem:prevSpreadIndex inSection:0]
-                                                       toIndexPath:[NSIndexPath indexPathForItem:currSpreadIndex inSection:0]];
-                }
                 [strongSelf.collectionView deleteItemsAtIndexPaths:indexPathsToDelete];
             }
         } completion:^(BOOL finished) {
