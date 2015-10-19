@@ -1322,19 +1322,14 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     
     NSURL* pendingFetchURL = [self pendingFetchURLForPageImageID:pageImageID];
-    // we are already fetching for this page
+    
+    // we are already fetching for this page - cancel and try again...
+    // Previously we didnt re-fetch if we were in the process of fetching.
+    // but unfortunately there were situations where the page-view changed between fetches, so the old fetch was invalidated
+    // ... this is a horrible hack that needs to be properly fixed my moving the fetching code out
     if (pendingFetchURL)
     {
-        // are we already fetching for this URL on this page... if so dont bother continuing
-        if ([pendingFetchURL isEqual:url])
-        {
-            return;
-        }
-        // the url we are fetching for this page is different - cancel previous requests
-        else
-        {
-            [self cancelImageFetchOpForPageImageID:pageImageID];
-        }
+        [self cancelImageFetchOpForPageImageID:pageImageID];
     }
     
 
