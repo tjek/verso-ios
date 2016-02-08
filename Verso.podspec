@@ -1,9 +1,9 @@
 Pod::Spec.new do |s|
     s.name         = "Verso"
-    s.version      = "0.2"
+    s.version      = "0.3"
     s.summary      = "A multi-paged image viewer for iOS"
     
-    s.homepage     = "https://github.com/eTilbudsavis/ios-verso"
+    s.homepage     = "https://github.com/shopgun/verso"
     s.license      = "MIT"
     s.author       = { "Laurie Hufford" => "lh@etilbudsavis.dk" }
     
@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
     s.requires_arc = true
     
     s.source       = {
-        :git => "https://github.com/eTilbudsavis/ios-verso.git",
+        :git => "https://github.com/shopgun/verso.git",
         :tag => "v" + s.version.to_s
     }
     
