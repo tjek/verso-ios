@@ -92,6 +92,12 @@
 
 - (NSArray*) getHotspotViewsAtLocation:(CGPoint)location;
 
+
+// This will re-draw the page image every time a new piece of data arrives.
+// Only applies to non-zoom image.
+// defaults to NO.
+@property (nonatomic, assign) BOOL updateImagesProgressively;
+
 @end
 
 

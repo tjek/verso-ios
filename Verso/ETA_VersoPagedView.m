@@ -175,6 +175,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     _singlePageMode = YES;
     _previousVisiblePageRange = NSMakeRange(NSNotFound, 0);
     _isShowingOutroView = NO;
+    _updateImagesProgressively = NO;
     
     [self addSubviews];
 }
@@ -1344,7 +1345,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         return;
     }
     
-    BOOL progressiveDownload = !isZoomImage;
+    BOOL progressiveDownload = !isZoomImage && self.updateImagesProgressively;
     
     __weak __typeof(self) weakSelf = self;
     __weak __typeof(pageView) weakPageView = pageView;
