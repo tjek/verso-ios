@@ -8,10 +8,9 @@
 
 #import <UIKit/UIKit.h>
 
-
-
 @protocol ETA_VersoPagedViewDataSource;
 @protocol ETA_VersoPagedViewDelegate;
+@protocol ETA_VersoPageImageURLFetcher;
 
 @interface ETA_VersoPagedView : UIView
 
@@ -82,6 +81,8 @@
 @property (nonatomic, weak) id<ETA_VersoPagedViewDataSource> dataSource;
 @property (nonatomic, weak) id<ETA_VersoPagedViewDelegate> delegate;
 
+// This handles the fetching/caching of the page images. If not set the default SDWebImage implementation will be used
+@property (nonatomic, strong) id<ETA_VersoPageImageURLFetcher> imageFetcher;
 
 - (UIPanGestureRecognizer*) pagePanGestureRecognizer;
 
@@ -92,10 +93,6 @@
 - (NSArray*) getHotspotViewsAtLocation:(CGPoint)location;
 
 @end
-
-
-
-
 
 
 

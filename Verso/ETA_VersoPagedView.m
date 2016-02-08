@@ -8,12 +8,119 @@
 
 #import "ETA_VersoPagedView.h"
 
+// Protocols
+#import "ETA_VersoPageImageURLFetcher.h"
+#import "ETA_VersoPageImageURLFetcher_SDWebImage.h"
+
 // Views
 #import "ETA_VersoPageSpreadCell.h"
 
 // Utilities
-#import <SDWebImage/SDWebImageManager.h>
 #import "ETA_VersoHorizontalLayout.h"
+
+
+
+NSString* Verso_PageImageKeyForIndex(NSUInteger pageIndex, BOOL isZoomImage)
+{
+    return [NSString stringWithFormat:@"%@-%@", @(pageIndex), isZoomImage ? @"zoom":@"view"];
+}
+
+
+
+#pragma mark Page/Spread conversion utilities (Stateless)
+
+NSUInteger Verso_NumberOfPageSpreadsForPageCount(NSUInteger pageCount, BOOL singlePageMode)
+{
+    // update number of items
+    NSUInteger spreadCount = pageCount;
+    if (!singlePageMode && pageCount != 0)
+    {
+        // round down to the even page count, and subtract 1
+        spreadCount = (pageCount-(pageCount%2) + 2) / 2;
+    }
+    
+    return spreadCount;
+}
+
+NSUInteger Verso_PageSpreadIndexForPageIndex(NSUInteger pageIndex, BOOL singlePageMode)
+{
+    if (pageIndex == NSNotFound)
+        return NSNotFound;
+    
+    NSInteger spreadIndex = pageIndex;
+    
+    if (!singlePageMode)
+    {
+        // round up to the even page index (0->0, 1->2, 2->2, 3->4 ...), and halve
+        spreadIndex = (pageIndex + (pageIndex % 2)) / 2.0;
+    }
+    return spreadIndex;
+}
+
+BOOL Verso_IsPageIndexVerso(NSInteger pageIndex)
+{
+    // 0 = recto
+    return (pageIndex % 2) == 1;
+}
+
+NSUInteger Verso_PageIndexForPageSpreadIndex(NSInteger spreadIndex, BOOL versoSide,  BOOL singlePageMode, NSUInteger pageCount)
+{
+    if (spreadIndex == NSNotFound || spreadIndex < 0)
+        return NSNotFound;
+    
+    NSInteger pageIndex = spreadIndex;
+    if (!singlePageMode)
+    {
+        pageIndex *= 2;
+        if (versoSide)
+            pageIndex--;
+    }
+    
+    if (pageIndex >= 0 && pageIndex < pageCount && Verso_IsPageIndexVerso(pageIndex) == versoSide)
+        return pageIndex;
+    else
+        return NSNotFound;
+}
+
+
+NSRange Verso_PageIndexRangeForPageSpreadIndex(NSInteger spreadIndex, BOOL singlePageMode, NSUInteger pageCount)
+{
+    NSUInteger versoPageIndex = Verso_PageIndexForPageSpreadIndex(spreadIndex, YES, singlePageMode, pageCount);
+    NSUInteger rectoPageIndex = Verso_PageIndexForPageSpreadIndex(spreadIndex, NO, singlePageMode, pageCount);
+    
+    NSUInteger rangeLength;
+    if (versoPageIndex != NSNotFound && rectoPageIndex != NSNotFound)
+    {
+        rangeLength = (rectoPageIndex - versoPageIndex) + 1;
+    }
+    else if (versoPageIndex != NSNotFound || rectoPageIndex != NSNotFound)
+    {
+        rangeLength = 1;
+    }
+    else
+    {
+        rangeLength = 0;
+    }
+    
+    
+    NSUInteger rangeStart;
+    if (versoPageIndex != NSNotFound)
+    {
+        rangeStart = versoPageIndex;
+    }
+    else if (rectoPageIndex != NSNotFound)
+    {
+        rangeStart = rectoPageIndex;
+    }
+    else
+    {
+        rangeStart = NSNotFound;
+    }
+    
+    return NSMakeRange(rangeStart, rangeLength);
+}
+
+
 
 @interface ETA_VersoPagedView () <UICollectionViewDelegate, UICollectionViewDataSource, ETA_VersoPageSpreadCellDelegate>
 
@@ -30,15 +137,12 @@
 
 @property (nonatomic, strong) UICollectionView* collectionView;
 
-@property (nonatomic, strong) SDWebImageManager* cachedImageDownloader;
-@property (nonatomic, strong) NSMutableDictionary* imageFetchURLsByPageImageID;
-@property (nonatomic, strong) NSMutableDictionary* imageFetchOpsByURL;
-
 
 @property (nonatomic, strong) UIView* outroView;
 @property (nonatomic, assign) BOOL isShowingOutroView;
 @property (nonatomic, strong) UITapGestureRecognizer* outsideOutroTap;
 
+@property (nonatomic, strong) NSMutableDictionary<NSString*, NSURL*>* imageURLByPageKey;
 
 @end
 
@@ -83,7 +187,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 -(void) setBounds:(CGRect)bounds
 {
     // make sure the current cell is visible (specifically to close the outro view)
-    NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:self.singlePageMode];
+    NSUInteger currSpreadIndex = Verso_PageSpreadIndexForPageIndex(self.currentPageIndex, self.singlePageMode);
     [self _showPageSpreadAtIndex:currSpreadIndex animated:NO];
 
     [self _zoomOutCurrentPageSpread];
@@ -117,7 +221,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 - (void) dealloc
 {
-    [self cancelAllImageFetchOps];
+    [_imageFetcher cancelAllImageFetchJobs];
+    _imageFetcher = nil;
     
     _collectionView.delegate = nil;
     _collectionView.dataSource = nil;
@@ -156,11 +261,11 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     // move the collection view items around to fit the changes
     
-    NSUInteger prevSpreadCount = [self _numberOfPageSpreadsForPageCount:self.numberOfPages inSinglePageMode:prevSinglePageMode];
-    NSUInteger prevSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:prevSinglePageMode];
+    NSUInteger prevSpreadCount = Verso_NumberOfPageSpreadsForPageCount(self.numberOfPages, prevSinglePageMode);
+    NSUInteger prevSpreadIndex = Verso_PageSpreadIndexForPageIndex(self.currentPageIndex, prevSinglePageMode);
     
-    NSUInteger currSpreadCount = [self _numberOfPageSpreadsForPageCount:self.numberOfPages inSinglePageMode:singlePageMode];
-    NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:singlePageMode];
+    NSUInteger currSpreadCount = Verso_NumberOfPageSpreadsForPageCount(self.numberOfPages, singlePageMode);
+    NSUInteger currSpreadIndex = Verso_PageSpreadIndexForPageIndex(self.currentPageIndex, singlePageMode);
     NSLog(@"Set singlePageMode %@->%@ ... spread cnt: %@->%@ (%@ pages)  |  idx:%@->%@ %@", @(prevSinglePageMode), @(_singlePageMode), @(prevSpreadCount), @(currSpreadCount), @(self.numberOfPages), @(prevSpreadIndex), @(currSpreadIndex), ![NSThread isMainThread] ? @"(Not Main Thread!)" : @"");
     
     // first update the currently visible spread cell
@@ -240,7 +345,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     // update the spread count, and reload all the spreads
     
 //    NSUInteger prevSpreadCount = self.numberOfPageSpreads;
-    NSUInteger currSpreadCount = [self _numberOfPageSpreadsForPageCount:self.numberOfPages inSinglePageMode:self.singlePageMode];
+    NSUInteger currSpreadCount = Verso_NumberOfPageSpreadsForPageCount(self.numberOfPages, self.singlePageMode);
     self.numberOfPageSpreads = currSpreadCount;
     
     
@@ -257,7 +362,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     
     // go to the current spread
-    NSUInteger currSpreadIndex = self.numberOfPageSpreads > 0 ? [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:self.singlePageMode] : NSNotFound;
+    NSUInteger currSpreadIndex = self.numberOfPageSpreads > 0 ? Verso_PageSpreadIndexForPageIndex(self.currentPageIndex, self.singlePageMode) : NSNotFound;
     [self _showPageSpreadAtIndex:currSpreadIndex animated:NO];
     
     
@@ -292,7 +397,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     
     
     // go to the current spread
-    NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:self.singlePageMode];
+    NSUInteger currSpreadIndex = Verso_PageSpreadIndexForPageIndex(self.currentPageIndex, self.singlePageMode);
     [self _showPageSpreadAtIndex:currSpreadIndex animated:animated];
     
     
@@ -363,102 +468,6 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 #pragma mark - Private Methods
 
 
-#pragma mark Page/Spread conversion utilities (Stateless)
-
-- (NSUInteger) _numberOfPageSpreadsForPageCount:(NSUInteger)pageCount inSinglePageMode:(BOOL)singlePageMode
-{
-    // update number of items
-    NSUInteger spreadCount = pageCount;
-    if (!singlePageMode && pageCount != 0)
-    {
-        // round down to the even page count, and subtract 1
-        spreadCount = (pageCount-(pageCount%2) + 2) / 2;
-    }
-    
-    return spreadCount;
-}
-
-- (NSUInteger) _pageSpreadIndexForPageIndex:(NSUInteger)pageIndex inSinglePageMode:(BOOL)singlePageMode
-{
-    if (pageIndex == NSNotFound)
-        return NSNotFound;
-    
-    NSInteger spreadIndex = pageIndex;
-    
-    if (!singlePageMode)
-    {
-        // round up to the even page index (0->0, 1->2, 2->2, 3->4 ...), and halve
-        spreadIndex = (pageIndex + (pageIndex % 2)) / 2.0;
-    }
-    return spreadIndex;
-}
-
-- (BOOL) _isPageIndexVerso:(NSInteger)pageIndex
-{
-    // 0 = recto
-    return (pageIndex % 2) == 1;
-}
-
-- (NSUInteger) _pageIndexForPageSpreadIndex:(NSInteger)spreadIndex versoSide:(BOOL)versoSide inSinglePageMode:(BOOL)singlePageMode withPageCount:(NSUInteger)pageCount
-{
-    if (spreadIndex == NSNotFound || spreadIndex < 0)
-        return NSNotFound;
-    
-    NSInteger pageIndex = spreadIndex;
-    if (!singlePageMode)
-    {
-        pageIndex *= 2;
-        if (versoSide)
-            pageIndex--;
-    }
-    
-    if (pageIndex >= 0 && pageIndex < pageCount && [self _isPageIndexVerso:pageIndex] == versoSide)
-        return pageIndex;
-    else
-        return NSNotFound;
-}
-
-- (NSRange) _pageIndexRangeForPageSpreadIndex:(NSInteger)spreadIndex inSinglePageMode:(BOOL)singlePageMode withPageCount:(NSUInteger)pageCount
-{
-    NSUInteger versoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:YES inSinglePageMode:singlePageMode withPageCount:pageCount];
-    NSUInteger rectoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:NO inSinglePageMode:singlePageMode withPageCount:pageCount];
-    
-    NSUInteger rangeLength;
-    if (versoPageIndex != NSNotFound && rectoPageIndex != NSNotFound)
-    {
-        rangeLength = (rectoPageIndex - versoPageIndex) + 1;
-    }
-    else if (versoPageIndex != NSNotFound || rectoPageIndex != NSNotFound)
-    {
-        rangeLength = 1;
-    }
-    else
-    {
-        rangeLength = 0;
-    }
-    
-    
-    NSUInteger rangeStart;
-    if (versoPageIndex != NSNotFound)
-    {
-        rangeStart = versoPageIndex;
-    }
-    else if (rectoPageIndex != NSNotFound)
-    {
-        rangeStart = rectoPageIndex;
-    }
-    else
-    {
-        rangeStart = NSNotFound;
-    }
-    
-    return NSMakeRange(rangeStart, rangeLength);
-}
-
-
-
-
-
 #pragma mark Collection View Methods
 
 - (void) _closeOutro
@@ -510,7 +519,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 // get the spread cell for the current page index
 - (ETA_VersoPageSpreadCell*) _currentPageSpreadCell
 {
-    NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:[self visiblePageIndexRange].location inSinglePageMode:self.singlePageMode];
+    NSUInteger currSpreadIndex = Verso_PageSpreadIndexForPageIndex([self visiblePageIndexRange].location, self.singlePageMode);
     return [self _cellForPageSpreadIndex:currSpreadIndex];
 }
 
@@ -520,7 +529,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
    
     NSUInteger spreadIndex = collectionWidth ? (NSUInteger)floor(pointToCheck.x/collectionWidth) : NSNotFound;
 
-    NSRange pageRange = [self _pageIndexRangeForPageSpreadIndex:spreadIndex inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
+    NSRange pageRange = Verso_PageIndexRangeForPageSpreadIndex(spreadIndex, self.singlePageMode, self.numberOfPages);
     
     return pageRange;
 }
@@ -653,56 +662,22 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         // no prefetch if not valid page
         if (visiblePageIndexRange.location == NSNotFound || visiblePageIndexRange.length == 0)
         {
-            if (self.numberOfPages > 0)
-                [self cancelImageFetchOpsNotOnPageIndexes:[NSIndexSet indexSetWithIndex:self.numberOfPages-1]];
             return;
         }
         
+        
+        // prefetch pages around the currently visible page
+        // TODO: maybe delay this call for a moment to avoid repeated prefetches as the scroll quickly
+        [self _prefetchViewImagesAroundVisiblePageIndexRange:visiblePageIndexRange];
+        
+        
         // add the current cell to the start of the request queue
-        NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:visiblePageIndexRange.location inSinglePageMode:self.singlePageMode];
-        [self _startFetchingImagesForPageView:[self _cellForPageSpreadIndex:currSpreadIndex]
-                                  atIndexPath:[NSIndexPath indexPathForItem:currSpreadIndex inSection:0]
-                                    zoomImage:NO
-                                 onlyIfCached:NO];
+//        NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:visiblePageIndexRange.location inSinglePageMode:self.singlePageMode];
+//        [self _startFetchingImagesForPageView:[self _cellForPageSpreadIndex:currSpreadIndex]
+//                                  atIndexPath:[NSIndexPath indexPathForItem:currSpreadIndex inSection:0]
+//                                    zoomImage:NO];
         
 
-        
-        
-        // do the prefetching around the newly visible page
-        NSInteger pagesBehindToPrefetch = 3;
-        NSInteger startPrefetchBeforeIndex = visiblePageIndexRange.location;
-        if ([self.delegate respondsToSelector:@selector(versoPagedView:numberOfPagesAheadToPrefetch:)])
-        {
-            pagesBehindToPrefetch = [self.delegate versoPagedView:self numberOfPagesBehindToPrefetch:startPrefetchBeforeIndex];
-        }
-        
-        if (pagesBehindToPrefetch > 0)
-        {
-            [self _prefetchViewImagesFromIndex:startPrefetchBeforeIndex-pagesBehindToPrefetch toIndex:startPrefetchBeforeIndex-1];
-        }
-        
-        
-        
-    
-        NSInteger pagesAheadToPrefetch = 3;
-        NSInteger startPrefetchAfterIndex = visiblePageIndexRange.location + visiblePageIndexRange.length - 1;
-        if ([self.delegate respondsToSelector:@selector(versoPagedView:numberOfPagesAheadToPrefetch:)])
-        {
-            pagesAheadToPrefetch = [self.delegate versoPagedView:self numberOfPagesAheadToPrefetch:startPrefetchAfterIndex];
-        }
-        
-        if (pagesAheadToPrefetch > 0)
-        {
-            [self _prefetchViewImagesFromIndex:startPrefetchAfterIndex+1 toIndex:startPrefetchAfterIndex+pagesAheadToPrefetch];
-        }
-        
-        
-        
-        NSInteger firstActiveIndex = MAX(startPrefetchBeforeIndex-pagesBehindToPrefetch, 0);
-        NSInteger lastActiveIndex = MAX(startPrefetchAfterIndex+pagesAheadToPrefetch, 0);
-        
-        // cancel fetching requests outside of the prefetch range
-        [self cancelImageFetchOpsNotOnPageIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(firstActiveIndex, (lastActiveIndex-firstActiveIndex)+1)]];
     });
 }
 
@@ -726,7 +701,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         self.outsideOutroTap.cancelsTouchesInView = NO;
         [self addGestureRecognizer:self.outsideOutroTap];
         
-        NSUInteger currSpreadIndex = [self _pageSpreadIndexForPageIndex:self.currentPageIndex inSinglePageMode:self.singlePageMode];
+        NSUInteger currSpreadIndex = Verso_PageSpreadIndexForPageIndex(self.currentPageIndex, self.singlePageMode);
         ETA_VersoPageSpreadCell* lastCell = [self _cellForPageSpreadIndex:currSpreadIndex];
         
         [lastCell.tapGesture requireGestureRecognizerToFail:self.outsideOutroTap];
@@ -858,13 +833,21 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 #pragma mark - Datasource methods
 
-- (NSURL*) imageURLForPageIndex:(NSUInteger)pageIndex withMaxSize:(CGSize)maxPageSize isZoomImage:(BOOL)zoomImage
+// This is cached so we always get the same URL for pageIndex/zoomImage after first request.
+// `maxPageSize` is only used when first requesting url
+- (NSURL*) imageURLForPageIndex:(NSUInteger)pageIndex isZoomImage:(BOOL)zoomImage  withMaxSize:(CGSize)maxPageSize
 {
-    NSURL* url = nil;
-    
-    if ([self.dataSource respondsToSelector:@selector(versoPagedView:imageURLForPageIndex:withMaxSize:isZoomImage:)])
+    NSString* pageKey = Verso_PageImageKeyForIndex(pageIndex, zoomImage);
+
+    NSURL* url = pageKey ? self.imageURLByPageKey[pageKey] : nil;
+    if (!url && [self.dataSource respondsToSelector:@selector(versoPagedView:imageURLForPageIndex:withMaxSize:isZoomImage:)])
     {
         url = [self.dataSource versoPagedView:self imageURLForPageIndex:pageIndex withMaxSize:maxPageSize isZoomImage:zoomImage];
+        
+        if (!self.imageURLByPageKey) {
+            self.imageURLByPageKey = [NSMutableDictionary new];
+        }
+        self.imageURLByPageKey[pageKey] = url;
     }
 
     return url;
@@ -917,13 +900,16 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     if (pageView.zoomScale <= 1.0)
     {
         NSInteger versoPageIndex = [pageView pageIndexForSide:ETA_VersoPageSpreadSide_Verso];
-        if (versoPageIndex > 0 && versoPageIndex != NSNotFound)
-            [self cancelImageFetchOpForPageImageID:[self pageImageIDForPageIndex:versoPageIndex isZoomImage:YES]];
+        if (versoPageIndex > 0 && versoPageIndex != NSNotFound) {
+
+            [self.imageFetcher cancelImageFetchForURL:[self imageURLForPageIndex:versoPageIndex isZoomImage:YES withMaxSize:CGSizeZero]];
+        }
         
         NSInteger rectoPageIndex = [pageView pageIndexForSide:ETA_VersoPageSpreadSide_Recto];
-        if (rectoPageIndex > 0 && rectoPageIndex != NSNotFound)
-            [self cancelImageFetchOpForPageImageID:[self pageImageIDForPageIndex:rectoPageIndex isZoomImage:YES]];
-
+        if (rectoPageIndex > 0 && rectoPageIndex != NSNotFound) {
+            
+            [self.imageFetcher cancelImageFetchForURL:[self imageURLForPageIndex:rectoPageIndex isZoomImage:YES withMaxSize:CGSizeZero]];
+        }
         return;
     }
     
@@ -932,7 +918,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         return;
 
 
-    [self _startFetchingImagesForPageView:pageView atIndexPath:indexPath zoomImage:YES onlyIfCached:NO];
+    [self _startFetchingImagesForPageView:pageView atIndexPath:indexPath zoomImage:YES];
 }
 
 - (void) versoPageSpread:(ETA_VersoPageSpreadCell *)pageView didZoom:(CGFloat)zoomScale
@@ -994,8 +980,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 // update a pageView to show the pages at indexPath
 - (void) _preparePageView:(ETA_VersoPageSpreadCell*)pageView atSpreadIndex:(NSUInteger)spreadIndex animated:(BOOL)animated
 {
-    NSUInteger versoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:YES inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
-    NSUInteger rectoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:NO inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
+    NSUInteger versoPageIndex = Verso_PageIndexForPageSpreadIndex(spreadIndex, YES, self.singlePageMode, self.numberOfPages);
+    NSUInteger rectoPageIndex = Verso_PageIndexForPageSpreadIndex(spreadIndex, NO, self.singlePageMode, self.numberOfPages);
     
 
     BOOL fitToWidth = NO;
@@ -1048,7 +1034,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     [pageView.tapGesture requireGestureRecognizerToFail:self.collectionView.panGestureRecognizer];
     
     
-    [self _startFetchingImagesForPageView:pageView atIndexPath:[NSIndexPath indexPathForItem:spreadIndex inSection:0] zoomImage:NO onlyIfCached:YES];
+    [self _startFetchingImagesForPageView:pageView atIndexPath:[NSIndexPath indexPathForItem:spreadIndex inSection:0] zoomImage:NO];
 
     pageView.delegate = self;
 }
@@ -1058,12 +1044,12 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     if (!pageView)
     {
-        NSUInteger spreadIndex = [self _pageSpreadIndexForPageIndex:pageIndex inSinglePageMode:self.singlePageMode];
+        NSUInteger spreadIndex = Verso_PageSpreadIndexForPageIndex(pageIndex, self.singlePageMode);
         
         pageView = [self _cellForPageSpreadIndex:spreadIndex];
         if (!pageView)
         {
-            //            NSLog(@"[ImgDL] Page %tu No Pageview to update", pageIndex);
+//            NSLog(@"[ImgDL] Page %tu No Pageview to update", pageIndex);
             return;
         }
     }
@@ -1217,16 +1203,18 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
 
 
-#pragma mark - Image Downloader
+#pragma mark - Image Fetcher
 
-- (SDWebImageManager*) cachedImageDownloader
+- (id<ETA_VersoPageImageURLFetcher>) imageFetcher
 {
-    if (!_cachedImageDownloader)
+    if (!_imageFetcher)
     {
-        _cachedImageDownloader = [SDWebImageManager new];
+        _imageFetcher = [ETA_VersoPageImageURLFetcher_SDWebImage sharedImageFetcher];
     }
-    return _cachedImageDownloader;
+    return _imageFetcher;
 }
+
+
 
 - (CGSize) _maxPageImageSizeForPageView:(ETA_VersoPageSpreadCell *)pageView showingTwoPages:(BOOL)twoPages zoomImage:(BOOL)zoomImage
 {
@@ -1248,34 +1236,87 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 }
 
 
-- (void) _prefetchViewImagesFromIndex:(NSInteger)fromIndex toIndex:(NSInteger)toIndex
+
+
+
+#pragma mark - Image Prefetching
+
+- (void) _prefetchViewImagesAroundVisiblePageIndexRange:(NSRange)visiblePageRange
 {
-    if (fromIndex > toIndex || toIndex < 0)
+    if (visiblePageRange.location == NSNotFound || visiblePageRange.length == 0) {
+        return;
+    }
+
+    NSInteger startPrefetchBeforeIndex = visiblePageRange.location;
+    NSInteger startPrefetchAfterIndex = visiblePageRange.location + visiblePageRange.length - 1;
+
+
+    NSMutableIndexSet* pageIndexesToPrefetch = [NSMutableIndexSet new];
+    
+    // ask the delegate for the number of pages to prefetch
+    NSInteger pagesBehindToPrefetch = 3;
+    if ([self.delegate respondsToSelector:@selector(versoPagedView:numberOfPagesAheadToPrefetch:)])
+    {
+        pagesBehindToPrefetch = [self.delegate versoPagedView:self numberOfPagesBehindToPrefetch:startPrefetchBeforeIndex];
+    }
+    
+    NSInteger pagesAheadToPrefetch = 3;
+    if ([self.delegate respondsToSelector:@selector(versoPagedView:numberOfPagesAheadToPrefetch:)])
+    {
+        pagesAheadToPrefetch = [self.delegate versoPagedView:self numberOfPagesAheadToPrefetch:startPrefetchAfterIndex];
+    }
+    
+    
+    // get the page indexes to be prefetched
+    if (pagesBehindToPrefetch > 0)
+    {
+        [pageIndexesToPrefetch addIndexesInRange:NSMakeRange(startPrefetchBeforeIndex-pagesBehindToPrefetch, pagesBehindToPrefetch)];
+    }
+    if (pagesAheadToPrefetch > 0)
+    {
+        [pageIndexesToPrefetch addIndexesInRange:NSMakeRange(startPrefetchAfterIndex+1, pagesAheadToPrefetch)];
+    }
+    
+    // do the prefetching
+    [self _prefetchViewImagesFromIndexSet:pageIndexesToPrefetch];
+}
+
+- (void) _prefetchViewImagesFromIndexSet:(NSIndexSet*)indexSet
+{
+    if (!indexSet.count)
         return;
     
-    fromIndex = MIN(MAX(fromIndex, 0), (NSInteger)self.numberOfPages - 1);
-    toIndex = MIN(MAX(toIndex, 0), (NSInteger)self.numberOfPages - 1);
+    __block NSMutableArray<NSURL*>* urls = [[NSMutableArray alloc] initWithCapacity:indexSet.count];
     
-    for (NSUInteger idx=fromIndex; idx<=toIndex; idx++)
-    {
-        NSURL* url = [self imageURLForPageIndex:idx withMaxSize:CGSizeZero isZoomImage:NO];
-        [self _startFetchingImageAtURL:url forPageView:nil atPageIndex:idx isZoomImage:NO onlyIfCached:NO];
-    }
+    [indexSet enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL * _Nonnull stop) {
+        NSURL* url = [self imageURLForPageIndex:idx isZoomImage:NO withMaxSize:CGSizeZero];
+        
+        if (url)
+            [urls addObject:url];
+    }];
+    
+    [self.imageFetcher prefetchPageImageURLs:urls];
 }
 
 
 
 
 
-- (void) _startFetchingImagesForPageView:(ETA_VersoPageSpreadCell *)pageView atIndexPath:(NSIndexPath*)indexPath zoomImage:(BOOL)zoomImage onlyIfCached:(BOOL)onlyIfCached
+
+
+
+
+
+
+- (void) _startFetchingImagesForPageView:(ETA_VersoPageSpreadCell *)pageView atIndexPath:(NSIndexPath*)indexPath zoomImage:(BOOL)zoomImage
 {
     if (!indexPath)
         return;
     
     NSUInteger spreadIndex = indexPath.item;
     
-    NSUInteger versoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:YES inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
-    NSUInteger rectoPageIndex = [self _pageIndexForPageSpreadIndex:spreadIndex versoSide:NO inSinglePageMode:self.singlePageMode withPageCount:self.numberOfPages];
+    NSUInteger versoPageIndex = Verso_PageIndexForPageSpreadIndex(spreadIndex, YES, self.singlePageMode, self.numberOfPages);
+    NSUInteger rectoPageIndex = Verso_PageIndexForPageSpreadIndex(spreadIndex, NO, self.singlePageMode, self.numberOfPages);
     
 
     BOOL twoPages = (versoPageIndex != NSNotFound) && (rectoPageIndex != NSNotFound);
@@ -1285,214 +1326,43 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     // avoid refetching zoom images
     if (versoPageIndex != NSNotFound && (!zoomImage || ![pageView isShowingZoomImageForSide:ETA_VersoPageSpreadSide_Verso]))
     {
-        NSURL* primaryURL = [self imageURLForPageIndex:versoPageIndex withMaxSize:maxPageSize isZoomImage:zoomImage];
-        [self _startFetchingImageAtURL:primaryURL forPageView:pageView atPageIndex:versoPageIndex isZoomImage:zoomImage onlyIfCached:onlyIfCached];
+        NSURL* primaryURL = [self imageURLForPageIndex:versoPageIndex isZoomImage:zoomImage withMaxSize:maxPageSize];
+        [self _startFetchingImageAtURL:primaryURL forPageView:pageView atPageIndex:versoPageIndex isZoomImage:zoomImage];
     }
     
     if (rectoPageIndex != NSNotFound && (!zoomImage || ![pageView isShowingZoomImageForSide:ETA_VersoPageSpreadSide_Recto]))
     {
-        NSURL* secondaryURL = [self imageURLForPageIndex:rectoPageIndex withMaxSize:maxPageSize isZoomImage:zoomImage];
-        [self _startFetchingImageAtURL:secondaryURL forPageView:pageView atPageIndex:rectoPageIndex isZoomImage:zoomImage onlyIfCached:onlyIfCached];
+        NSURL* secondaryURL = [self imageURLForPageIndex:rectoPageIndex isZoomImage:zoomImage withMaxSize:maxPageSize];
+        [self _startFetchingImageAtURL:secondaryURL forPageView:pageView atPageIndex:rectoPageIndex isZoomImage:zoomImage];
     }
 }
 
 
-- (void) _startFetchingImageAtURL:(NSURL*)url forPageView:(ETA_VersoPageSpreadCell*)pageView atPageIndex:(NSUInteger)pageIndex isZoomImage:(BOOL)isZoomImage onlyIfCached:(BOOL)onlyIfCached
+- (void) _startFetchingImageAtURL:(NSURL*)url forPageView:(ETA_VersoPageSpreadCell*)pageView atPageIndex:(NSUInteger)pageIndex isZoomImage:(BOOL)isZoomImage
 {
-    if (!url)
-    {
+    if (!url) {
         return;
     }
     
-    BOOL haveCachedVersion = [self.cachedImageDownloader cachedImageExistsForURL:url];
-    
-    // dont do prefetch if already cached
-    if (!pageView && haveCachedVersion)
-    {
-        return;
-    }
-    
-    // we only want to fetch if it's cached, and it isnt
-    if (onlyIfCached && !haveCachedVersion)
-    {
-        return;
-    }
-    
-    NSString* pageImageID = [self pageImageIDForPageIndex:pageIndex isZoomImage:isZoomImage];
-    
-    
-    NSURL* pendingFetchURL = [self pendingFetchURLForPageImageID:pageImageID];
-    
-    // we are already fetching for this page - cancel and try again...
-    // Previously we didnt re-fetch if we were in the process of fetching.
-    // but unfortunately there were situations where the page-view changed between fetches, so the old fetch was invalidated
-    // ... this is a horrible hack that needs to be properly fixed my moving the fetching code out
-    if (pendingFetchURL)
-    {
-        [self cancelImageFetchOpForPageImageID:pageImageID];
-    }
-    
-
+    BOOL progressiveDownload = !isZoomImage;
     
     __weak __typeof(self) weakSelf = self;
-    SDWebImageDownloaderProgressBlock progressBlock = nil;
-//    SDWebImageDownloaderProgressBlock progressBlock = ^(NSInteger receivedSize, NSInteger expectedSize) {
-////        NSLog(@"[ImgDL] %tu Progress %tu/%tu", pageIndex, receivedSize, expectedSize);
-//    };
-    __block BOOL alreadyFetched = NO;
-    SDWebImageCompletionWithFinishedBlock completionBlock = ^(UIImage *image, NSError *error, SDImageCacheType cacheType, BOOL finished, NSURL *imageURL) {
-        alreadyFetched = YES;
-        if (!image)
-        {
-            NSLog(@"[ImgDL] Page %@ Error %@", pageImageID, error);
-        }
-//        else
-//        {
-//            NSLog(@"[ImgDL] Page %@ Success!", pageImageID);
+    __weak __typeof(pageView) weakPageView = pageView;
+
+    [self.imageFetcher fetchPageImageWithURL:url progressive:progressiveDownload completion:^(UIImage * _Nullable image, NSError * _Nullable error, BOOL finished) {
+        
+//        if (error) {
+//            NSLog(@"[ImgFetch] ERROR fetching image %@ %@ %@", @(pageIndex), url.lastPathComponent, error);
 //        }
-        [weakSelf cancelImageFetchOpForPageImageID:pageImageID];
-        [weakSelf _updateImage:image forPageView:pageView atPageIndex:pageIndex isZoomImage:isZoomImage];
-    };
-    
-    
-    SDWebImageOptions options = SDWebImageRetryFailed;
-    
-//    NSLog(@"[ImgDL] Page %@ Start", pageImageID);
-    // start a download operation for this url
-    id <SDWebImageOperation> fetchOp = [self.cachedImageDownloader downloadImageWithURL:url options:options progress:progressBlock completed:completionBlock];
-    if (!alreadyFetched)
-        [self addImageFetchOp:fetchOp withURL:url forPageImageID:pageImageID];
-    
-}
-
-
-
-
-
-
-- (NSMutableDictionary*) imageFetchURLsByPageImageID
-{
-    if (!_imageFetchURLsByPageImageID)
-    {
-        _imageFetchURLsByPageImageID = [NSMutableDictionary new];
-    }
-    return _imageFetchURLsByPageImageID;
-}
-- (NSMutableDictionary*) imageFetchOpsByURL
-{
-    if (!_imageFetchOpsByURL)
-    {
-        _imageFetchOpsByURL = [NSMutableDictionary new];
-    }
-    return _imageFetchOpsByURL;
-}
-
-
-
-- (void) cancelAllImageFetchOps
-{
-    @synchronized(self.imageFetchOpsByURL)
-    {
-        [self.imageFetchOpsByURL enumerateKeysAndObjectsUsingBlock:^(id key, id<SDWebImageOperation> fetchOp, BOOL *stop) {
-            [fetchOp cancel];
-        }];
-             
-        [self.imageFetchOpsByURL removeAllObjects];
-        [self.imageFetchURLsByPageImageID removeAllObjects];
-    }
-}
-
-
-- (void) cancelImageFetchOpsNotOnPageIndexes:(NSIndexSet*)pageIndexes
-{
-    if (!pageIndexes)
-        return;
-    
-    @synchronized(self.imageFetchOpsByURL)
-    {
-        NSArray* allPageImageIDs = [self.imageFetchURLsByPageImageID allKeys];
+//        
+//        
+//        if (!image) {
+//            NSLog(@"[ImgFetch] ERROR No image on page %@", @(pageIndex));
+//        }
         
-        // nothing to cancel
-        if (!allPageImageIDs.count)
-            return;
-        
-        // add both zoom and view image ids to the passing set
-        NSMutableSet* passingPageImageIDs = [NSMutableSet setWithCapacity:pageIndexes.count*2];
-        [pageIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-            [passingPageImageIDs addObject:[self pageImageIDForPageIndex:idx isZoomImage:YES]];
-            [passingPageImageIDs addObject:[self pageImageIDForPageIndex:idx isZoomImage:NO]];
-        }];
-        
-        for (NSString* pageImageID in allPageImageIDs)
-        {
-            if (![passingPageImageIDs containsObject:pageImageID])
-            {
-                [self cancelImageFetchOpForPageImageID:pageImageID];
-            }
-        }
-    }
-}
-- (void) cancelImageFetchOpsForPageIndexes:(NSIndexSet*)pageIndexes areZoomImages:(BOOL)zoomImages
-{
-    if (!pageIndexes)
-        return;
-    
-    [pageIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-        NSString* pageImageID = [self pageImageIDForPageIndex:idx isZoomImage:zoomImages];
-        
-        [self cancelImageFetchOpForPageImageID:pageImageID];
+        [weakSelf _updateImage:image forPageView:weakPageView atPageIndex:pageIndex isZoomImage:isZoomImage];
     }];
 }
 
-
-- (NSString*) pageImageIDForPageIndex:(NSUInteger)pageIndex isZoomImage:(BOOL)isZoomImage
-{
-    return [NSString stringWithFormat:@"%@-%@", @(pageIndex), isZoomImage ? @"zoom":@"view"];
-}
-
-- (void) addImageFetchOp:(id<SDWebImageOperation>)fetchOp withURL:(NSURL*)url forPageImageID:(NSString*)pageImageID
-{
-    if (!pageImageID || !fetchOp || !url)
-        return;
-    
-    @synchronized(self.imageFetchOpsByURL)
-    {
-        // cancel and remove any pending fetches on this page index
-        [self cancelImageFetchOpForPageImageID:pageImageID];
-        
-        self.imageFetchURLsByPageImageID[pageImageID] = url;
-        self.imageFetchOpsByURL[url] = fetchOp;
-    }
-}
-
-- (void) cancelImageFetchOpForPageImageID:(NSString*)pageImageID
-{
-    if (!pageImageID)
-        return;
-    
-    @synchronized(self.imageFetchOpsByURL)
-    {
-        NSURL* existingFetchURL = self.imageFetchURLsByPageImageID[pageImageID];
-        if (existingFetchURL)
-        {
-            id<SDWebImageOperation> fetchOp = self.imageFetchOpsByURL[existingFetchURL];
-            [fetchOp cancel];
-            
-            [self.imageFetchOpsByURL removeObjectForKey:existingFetchURL];
-            [self.imageFetchURLsByPageImageID removeObjectForKey:pageImageID];
-        }
-    }
-}
-
-- (NSURL*) pendingFetchURLForPageImageID:(NSString*)pageImageID
-{
-    if (!pageImageID)
-        return nil;
-    
-    @synchronized(self.imageFetchOpsByURL)
-    {
-        return self.imageFetchURLsByPageImageID[pageImageID];
-    }
-}
 
 @end
