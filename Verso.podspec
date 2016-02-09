@@ -7,7 +7,7 @@ Pod::Spec.new do |s|
     s.license      = "MIT"
     s.author       = { "Laurie Hufford" => "lh@etilbudsavis.dk" }
     
-    s.platform     = :ios, '6.0'
+    s.platform     = :ios, '7.0'
     s.requires_arc = true
     
     s.source       = {
@@ -17,6 +17,6 @@ Pod::Spec.new do |s|
     
     s.public_header_files = "Verso/ETA_VersoPagedView.h"
     s.source_files = "Verso/*.{h,m}"
-    s.dependency "SDWebImage", "~> 3.7.1"
+    s.dependency "AFNetworking/UIKit", "~> 3.0.0"
     
 end

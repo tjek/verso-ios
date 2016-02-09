@@ -10,7 +10,7 @@
 
 // Protocols
 #import "ETA_VersoPageImageURLFetcher.h"
-#import "ETA_VersoPageImageURLFetcher_SDWebImage.h"
+#import "ETA_VersoPageImageURLFetcher_AFNetworking.h"
 
 // Views
 #import "ETA_VersoPageSpreadCell.h"
@@ -1210,7 +1210,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 {
     if (!_imageFetcher)
     {
-        _imageFetcher = [ETA_VersoPageImageURLFetcher_SDWebImage sharedImageFetcher];
+        _imageFetcher = [ETA_VersoPageImageURLFetcher_AFNetworking new];
     }
     return _imageFetcher;
 }

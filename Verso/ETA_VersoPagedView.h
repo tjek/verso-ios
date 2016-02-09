@@ -81,7 +81,7 @@
 @property (nonatomic, weak) id<ETA_VersoPagedViewDataSource> dataSource;
 @property (nonatomic, weak) id<ETA_VersoPagedViewDelegate> delegate;
 
-// This handles the fetching/caching of the page images. If not set the default SDWebImage implementation will be used
+// This handles the fetching/caching of the page images. If not set the default AFImageDownloader implementation will be used
 @property (nonatomic, strong) id<ETA_VersoPageImageURLFetcher> imageFetcher;
 
 - (UIPanGestureRecognizer*) pagePanGestureRecognizer;
