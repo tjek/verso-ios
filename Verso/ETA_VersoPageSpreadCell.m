@@ -131,12 +131,6 @@
     BOOL versoVisible = self.versoPageIndex != NSNotFound;
     BOOL rectoVisible = self.rectoPageIndex != NSNotFound;
     
-    // which side is front most - defaults to verso
-    ETA_VersoPageSpreadSide frontmostSide = ETA_VersoPageSpreadSide_Verso;
-    if (versoVisible == NO && rectoVisible)
-        frontmostSide = ETA_VersoPageSpreadSide_Recto;
-    
-    
     BOOL fitToWidth = self.fitToWidth;
 
     // calculate the max size for a single page image

@@ -841,7 +841,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
     NSString* pageKey = Verso_PageImageKeyForIndex(pageIndex, zoomImage);
 
     NSURL* url = pageKey ? self.imageURLByPageKey[pageKey] : nil;
-    if (!url && [self.dataSource respondsToSelector:@selector(versoPagedView:imageURLForPageIndex:withMaxSize:isZoomImage:)])
+    if (pageKey && !url && [self.dataSource respondsToSelector:@selector(versoPagedView:imageURLForPageIndex:withMaxSize:isZoomImage:)])
     {
         url = [self.dataSource versoPagedView:self imageURLForPageIndex:pageIndex withMaxSize:maxPageSize isZoomImage:zoomImage];
         
