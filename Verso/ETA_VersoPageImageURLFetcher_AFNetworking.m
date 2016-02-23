@@ -26,7 +26,8 @@
 {
     if (!_imageDownloader)
     {
-        _imageDownloader = [AFImageDownloader defaultInstance];
+        // use a unique image downloader, so that it doesnt block, and isnt blocked by, any other image fetching that uses the `defaultInstance`
+        _imageDownloader = [AFImageDownloader new];
     }
     return _imageDownloader;
 }
