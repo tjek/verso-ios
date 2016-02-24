@@ -50,6 +50,10 @@
 
 - (void) fetchPageImageWithURL:(NSURL*)url priority:(AFImageDownloadPrioritization)priority completion:(void (^)(UIImage* image, NSError* error, BOOL finished))completion
 {
+    [self fetchPageImageWithURL:url priority:priority remainingRetries:1 completion:completion];
+}
+- (void) fetchPageImageWithURL:(NSURL*)url priority:(AFImageDownloadPrioritization)priority remainingRetries:(NSUInteger)remainingRetries completion:(void (^)(UIImage* image, NSError* error, BOOL finished))completion
+{
     NSString* cacheKey = [self cacheKeyForURL:url];
     
     NSURLRequest* req = [NSURLRequest requestWithURL:url];
@@ -58,18 +62,32 @@
     
     __weak __typeof(self) weakSelf = self;
     AFImageDownloadReceipt* receipt = [self.imageDownloader downloadImageForURLRequest:req success:^(NSURLRequest * _Nonnull request, NSHTTPURLResponse * _Nullable response, UIImage * _Nonnull responseObject) {
-        
-        weakSelf.imageFetchOpsByCacheKey[cacheKey] = nil;
+        __strong __typeof(weakSelf) strongSelf = weakSelf;
+
+        strongSelf.imageFetchOpsByCacheKey[cacheKey] = nil;
         
         if (completion)
             completion(responseObject, nil, YES);
         
     } failure:^(NSURLRequest * _Nonnull request, NSHTTPURLResponse * _Nullable response, NSError * _Nonnull error) {
-        
-        self.imageFetchOpsByCacheKey[cacheKey] = nil;
-        
-        if (completion)
-            completion(nil, error, YES);
+        __strong __typeof(weakSelf) strongSelf = weakSelf;
+
+        if (remainingRetries > 0 && error.code == NSURLErrorNetworkConnectionLost)
+        {
+            // There is an issue with NSURLSession and keepAlive, where _sometimes_ there is a network connection lost error.
+            // The most sure-fire way to solve this is to just retry the request 1 more time.
+            // For more details:
+            //  - https://github.com/AFNetworking/AFNetworking/issues/2801
+            //  - http://stackoverflow.com/questions/25372318/error-domain-nsurlerrordomain-code-1005-the-network-connection-was-lost/25996971#25996971
+            [strongSelf fetchPageImageWithURL:url priority:priority remainingRetries:remainingRetries-1 completion:completion];
+        }
+        else
+        {
+            strongSelf.imageFetchOpsByCacheKey[cacheKey] = nil;
+            
+            if (completion)
+                completion(nil, error, YES);
+        }
     }];
     
     // save the receipt based on the url

@@ -288,7 +288,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
         [self.collectionView performBatchUpdates:^{
             __strong __typeof(weakSelf)strongSelf = weakSelf;
             
-            self.numberOfPageSpreads = currSpreadCount;
+            strongSelf.numberOfPageSpreads = currSpreadCount;
             
             // insert or remove page spreads, and move the currently visible one
             if (currSpreadCount > prevSpreadCount)
@@ -482,7 +482,9 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
             __weak __typeof(self) weakSelf = self;
             [CATransaction setCompletionBlock:^{
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                    weakSelf.collectionView.pagingEnabled = YES;
+                    __strong __typeof(weakSelf)strongSelf = weakSelf;
+
+                    strongSelf.collectionView.pagingEnabled = YES;
                 });
             }];
             
@@ -1352,6 +1354,8 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 
     [self.imageFetcher fetchPageImageWithURL:url progressive:progressiveDownload completion:^(UIImage * _Nullable image, NSError * _Nullable error, BOOL finished) {
         
+        __strong __typeof(weakSelf)strongSelf = weakSelf;
+        __strong __typeof(weakPageView)strongPageView = weakPageView;
 //        if (error) {
 //            NSLog(@"[ImgFetch] ERROR fetching image %@ %@ %@", @(pageIndex), url.lastPathComponent, error);
 //        }
@@ -1361,7 +1365,7 @@ static NSString* const kVersoPageSpreadCellIdentifier = @"kVersoPageSpreadCellId
 //            NSLog(@"[ImgFetch] ERROR No image on page %@", @(pageIndex));
 //        }
         
-        [weakSelf _updateImage:image forPageView:weakPageView atPageIndex:pageIndex isZoomImage:isZoomImage];
+        [strongSelf _updateImage:image forPageView:strongPageView atPageIndex:pageIndex isZoomImage:isZoomImage];
     }];
 }
 
