@@ -1,0 +1,16 @@
+PODS:
+  - Verso (1.0.0)
+
+DEPENDENCIES:
+  - Verso (from `../`)
+
+EXTERNAL SOURCES:
+  Verso:
+    :path: ../
+
+SPEC CHECKSUMS:
+  Verso: a9f7fedc6953cd453a938552c491df923dc6c2e1
+
+PODFILE CHECKSUM: edccbd8627f168ebfdef7efa36280a12d40f4392
+
+COCOAPODS: 1.0.1

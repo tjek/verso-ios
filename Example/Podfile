@@ -1,0 +1,11 @@
+use_frameworks!
+
+target 'Verso_Example' do
+  pod 'Verso', :path => '../'
+
+  target 'Verso_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end

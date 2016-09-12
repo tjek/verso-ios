@@ -1,0 +1,6 @@
+framework module Verso {
+  umbrella header "Verso-umbrella.h"
+
+  export *
+  module * { export * }
+}
