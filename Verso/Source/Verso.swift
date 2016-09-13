@@ -533,18 +533,16 @@ public class VersoView : UIView {
         if let preloadIndexes = dataSourceOptional.preloadPageIndexesForVerso(self, visiblePageIndexes: visiblePageIndexes) {
             requiredPageIndexes.addIndexes(preloadIndexes)
         } else {
-            if visiblePageIndexes.firstIndex >= 0 {
+            if visiblePageIndexes.firstIndex > 0 {
                 let beforeCount = dataSourceOptional.previousPageCountToPreloadForVerso(self, visiblePageIndexes: visiblePageIndexes)
                 let newFirstIndex = max(visiblePageIndexes.firstIndex-beforeCount, 0)
                 requiredPageIndexes.addIndexesInRange(NSMakeRange(newFirstIndex, visiblePageIndexes.firstIndex - newFirstIndex ))
             }
-            
-            if visiblePageIndexes.lastIndex < config.pageCount {
+            if visiblePageIndexes.lastIndex < (config.pageCount-1) {
                 let afterCount = dataSourceOptional.nextPageCountToPreloadForVerso(self, visiblePageIndexes: visiblePageIndexes)
                 let newLastIndex = min(visiblePageIndexes.lastIndex+afterCount, config.pageCount-1)
                 requiredPageIndexes.addIndexesInRange(NSMakeRange(visiblePageIndexes.lastIndex+1, newLastIndex - visiblePageIndexes.lastIndex))
             }
-            
         }
         
         return requiredPageIndexes
@@ -1529,8 +1527,10 @@ extension VersoSpreadConfiguration {
             let constructorResults = spreadPropertyConstructor?(spreadIndex:spreadIndex, nextPageIndex:nextPageIndex) ?? (spreadPageCount:1, maxZoomScale:4.0, widthPercentage:1.0)
 
             
+            let lastSpreadPageIndex = min(nextPageIndex + max(constructorResults.spreadPageCount,1) - 1, pageCount - 1)
+            
             var pageIndexes:[Int] = []
-            for pageIndex in nextPageIndex ..< nextPageIndex + max(constructorResults.spreadPageCount,1) {
+            for pageIndex in nextPageIndex ... lastSpreadPageIndex {
                 pageIndexes.append(pageIndex)
             }
             

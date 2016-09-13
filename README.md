@@ -1,11 +1,11 @@
-Verso
-=========
-
-A multi-paged image viewer for iOS.
+#Verso
 [![CI Status](http://img.shields.io/travis/Laurie Hufford/Verso.svg?style=flat)](https://travis-ci.org/Laurie Hufford/Verso)
 [![Version](https://img.shields.io/cocoapods/v/Verso.svg?style=flat)](http://cocoapods.org/pods/Verso)
 [![License](https://img.shields.io/cocoapods/l/Verso.svg?style=flat)](http://cocoapods.org/pods/Verso)
 [![Platform](https://img.shields.io/cocoapods/p/Verso.svg?style=flat)](http://cocoapods.org/pods/Verso)
+
+A multi-paged image viewer for iOS.
+
 
 ## Example
 
