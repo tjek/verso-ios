@@ -14,7 +14,7 @@ Verso makes it easy to implement a flexible multi-page book-like layout.
 
   s.ios.deployment_target = '8.0'
 
-  s.source_files = 'Verso/Source/**/*'
+  s.source_files = 'Sources/**/*'
 
   s.frameworks = 'UIKit'
 
