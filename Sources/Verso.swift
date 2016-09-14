@@ -790,7 +790,13 @@ public class VersoView : UIView {
                 pageView.alpha = 1
             }
         }
-
+        
+        if zoomView.zoomScale != 1 && zoomingPageIndexes.count > 0 {
+            _didStartZooming()
+            zoomView.zoomScale = 1.0
+            _didEndZooming()
+        }
+        
         zoomView.maximumZoomScale = 1.0
         zoomView.backgroundColor = UIColor.clearColor()
         zoomingPageIndexes = NSIndexSet()
