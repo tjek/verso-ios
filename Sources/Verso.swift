@@ -66,10 +66,11 @@ public protocol VersoViewDataSourceOptional : class {
     /// Ignored if `preloadPageIndexesForVerso` does not return nil.
     func nextPageCountToPreloadForVerso(verso:VersoView, visiblePageIndexes:NSIndexSet) -> Int
     
-    /// Provide a set of indexes to preload around the visible page indexes.
+    /// Gives you a chance to modify the page indexes to preload around the visible page indexes.
     /// This is for more advanced customization of the preloading indexes.
-    /// If nil (default), the next/prev page counts will be used instead.
-    func preloadPageIndexesForVerso(verso:VersoView, visiblePageIndexes:NSIndexSet) -> NSIndexSet?
+    /// The `preloadPageIndexes` property is based on the prev/nextPageCount dataSource results.
+    /// If nil (default), set that is passed as `preloadPageIndexes` will be used unmodified
+    func adjustPreloadPageIndexesForVerso(verso:VersoView, visiblePageIndexes:NSIndexSet, preloadPageIndexes:NSIndexSet) -> NSIndexSet?
     
     /// What color should the background fade to when zooming.
     func zoomBackgroundColorForVerso(verso:VersoView, zoomingPageIndexes:NSIndexSet) -> UIColor
@@ -88,7 +89,7 @@ public extension VersoViewDataSourceOptional {
     func nextPageCountToPreloadForVerso(verso:VersoView, visiblePageIndexes:NSIndexSet) -> Int {
         return 6
     }
-    func preloadPageIndexesForVerso(verso:VersoView, visiblePageIndexes:NSIndexSet) -> NSIndexSet? {
+    func adjustPreloadPageIndexesForVerso(verso:VersoView, visiblePageIndexes:NSIndexSet, preloadPageIndexes:NSIndexSet) -> NSIndexSet? {
         return nil
     }
     func zoomBackgroundColorForVerso(verso:VersoView, zoomingPageIndexes:NSIndexSet) -> UIColor {
@@ -528,25 +529,27 @@ public class VersoView : UIView {
         }
         
         // get all the page indexes we are going to config and position, based on delegate callbacks
-        let requiredPageIndexes = NSMutableIndexSet(indexSet: pageIndexes)
+        var preloadPageIndexes = NSMutableIndexSet(indexSet: pageIndexes)
+        
+        let beforeCount = dataSourceOptional.previousPageCountToPreloadForVerso(self, visiblePageIndexes: pageIndexes)
+        let afterCount = dataSourceOptional.nextPageCountToPreloadForVerso(self, visiblePageIndexes: pageIndexes)
+        
+        let newFirstIndex = max(pageIndexes.firstIndex-beforeCount, 0)
+        let newLastIndex = min(pageIndexes.lastIndex+afterCount, config.pageCount-1)
+        
+        preloadPageIndexes.addIndexesInRange(NSMakeRange(newFirstIndex, (newLastIndex+1) - newFirstIndex))
         
         
-        if let preloadIndexes = dataSourceOptional.preloadPageIndexesForVerso(self, visiblePageIndexes: pageIndexes) {
-            requiredPageIndexes.addIndexes(preloadIndexes)
-        } else {
-            if pageIndexes.firstIndex > 0 {
-                let beforeCount = dataSourceOptional.previousPageCountToPreloadForVerso(self, visiblePageIndexes: pageIndexes)
-                let newFirstIndex = max(pageIndexes.firstIndex-beforeCount, 0)
-                requiredPageIndexes.addIndexesInRange(NSMakeRange(newFirstIndex, pageIndexes.firstIndex - newFirstIndex ))
-            }
-            if pageIndexes.lastIndex < (config.pageCount-1) {
-                let afterCount = dataSourceOptional.nextPageCountToPreloadForVerso(self, visiblePageIndexes: pageIndexes)
-                let newLastIndex = min(pageIndexes.lastIndex+afterCount, config.pageCount-1)
-                requiredPageIndexes.addIndexesInRange(NSMakeRange(pageIndexes.lastIndex+1, newLastIndex - pageIndexes.lastIndex))
-            }
+        if let adjustedPreloadIndexes = dataSourceOptional.adjustPreloadPageIndexesForVerso(self, visiblePageIndexes: pageIndexes, preloadPageIndexes: preloadPageIndexes) {
+            preloadPageIndexes = NSMutableIndexSet(indexSet: adjustedPreloadIndexes)
         }
         
-        return requiredPageIndexes
+        // remove over-bounds
+        if preloadPageIndexes.lastIndex >= config.pageCount {
+            preloadPageIndexes.removeIndexesInRange(NSMakeRange(config.pageCount, preloadPageIndexes.lastIndex - (config.pageCount-1)))
+        }
+
+        return preloadPageIndexes
     }
     
     /// Asks the datasource to configure its pageview (done from preparePageView
