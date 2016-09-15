@@ -734,6 +734,11 @@ public class VersoView : UIView {
     @objc private func _didFinishScrolling() {
         // dont do any post-scrolling layout if the user rotated the device while scroll-animations were being performed.
         if performingLayout == false {
+            
+            _updateVisiblePageIndexes()
+            
+            _preparePageViews()
+            
             _updateCurrentSpreadIndex()
             
             _enableZoomingForCurrentPageViews(force: false)
