@@ -1,0 +1,126 @@
+//
+//  _____ _           _____
+// |   __| |_ ___ ___|   __|_ _ ___
+// |__   |   | . | . |  |  | | |   |
+// |_____|_|_|___|  _|_____|___|_|_|
+//               |_|
+//
+//  Copyright (c) 2016 ShopGun. All rights reserved.
+
+import UIKit
+
+import Verso
+
+class ViewController: UIViewController {
+
+    lazy var versoView:VersoView = {
+        let verso = VersoView()
+        
+        verso.dataSource = self
+        verso.delegate = self
+        
+        verso.frame = self.view.bounds
+        verso.autoresizingMask = [.FlexibleWidth, .FlexibleHeight]
+
+        return verso
+    }()
+    
+    var planetData:[String] = {
+        return ["Mercury",
+                "Venus",
+                "Earth",
+                "Mars",
+                "Jupiter",
+                "Saturn",
+                "Uranus",
+                "Neptune"]
+    }()
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        view.addSubview(versoView)
+    }
+}
+
+
+
+/// The view that renders the planet info
+class PlanetPageView : VersoPageView {
+    lazy var nameLabel:UILabel = {
+        let lbl = UILabel()
+        lbl.font = UIFont.boldSystemFontOfSize(30)
+        lbl.adjustsFontSizeToFitWidth = true
+        lbl.textColor = UIColor.whiteColor()
+        return lbl
+    }()
+    
+    required init(frame: CGRect) {
+        super.init(frame: frame)
+        
+        addSubview(nameLabel)
+        
+        backgroundColor = UIColor.blackColor()
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        var frame = nameLabel.frame
+        frame.size = nameLabel.sizeThatFits(bounds.size)
+        nameLabel.frame = frame
+        
+        nameLabel.center = CGPoint(x:bounds.midX, y:bounds.midY)
+    }
+}
+
+
+extension ViewController : VersoViewDataSource {
+    
+    /// This method is called whenever VersoView is about to relayout. 
+    /// It gives you a chance to define the configuration of all the spreads.
+    func spreadConfigurationForVerso(verso:VersoView, size:CGSize) -> VersoSpreadConfiguration {
+        
+        let isLandscape:Bool = size.width > size.height
+        
+        return VersoSpreadConfiguration.buildPageSpreadConfiguration(planetData.count, spreadSpacing: 20, spreadPropertyConstructor: { (spreadIndex, nextPageIndex) -> (spreadPageCount: Int, maxZoomScale: CGFloat, widthPercentage: CGFloat) in
+            
+            let isFirstPage = nextPageIndex == 0
+
+            let isSinglePage = isFirstPage || !isLandscape
+            
+            let spreadPageCount = isSinglePage ? 1 : 2
+            
+            return (spreadPageCount, 4.0, 1.0)
+        })
+    }
+    
+    /// Gives the dataSource a chance to configure the pageView.
+    /// This must not take a long time, as it is called during scrolling.
+    /// The pageView's `pageIndex` property will have been set, but its size will not be correct
+    func configurePageForVerso(verso:VersoView, pageView:VersoPageView) {
+        
+        guard let planetPage = pageView as? PlanetPageView else {
+            return
+        }
+        
+        let planetInfo = planetData[planetPage.pageIndex]
+        
+        planetPage.nameLabel.text = planetInfo
+    }
+    
+    
+    /// What subclass of VersoPageView should be used.
+    func pageViewClassForVerso(verso:VersoView, pageIndex:Int) -> VersoPageViewClass {
+        return PlanetPageView.self
+    }
+    
+}
+
+extension ViewController : VersoViewDelegate {
+    
+}
