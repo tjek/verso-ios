@@ -15,25 +15,25 @@ import UIKit
 public protocol VersoViewDelegate : class {
     
     /// This is triggered whenever the centered pages change, but only once any scrolling or re-layout animation finishes.
-    func currentPageIndexesChangedForVerso(verso:VersoView, pageIndexes:NSIndexSet, added:NSIndexSet, removed:NSIndexSet)
+    func currentPageIndexesChanged(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet)
     /// This is triggered whenever the visible pages change, whilst the user is scrolling, or after a relayout. This will be called before `currentPageIndexesChanged` callback is triggered.
-    func visiblePageIndexesChangedForVerso(verso:VersoView, pageIndexes:NSIndexSet, added:NSIndexSet, removed:NSIndexSet)
+    func visiblePageIndexesChanged(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet)
     
     /// The user started zooming in/out of the spread containing the specified pages. ZoomScale is the how zoomed in we are when zooming started.
-    func didStartZoomingPagesForVerso(verso:VersoView, zoomingPageIndexes:NSIndexSet, zoomScale:CGFloat)
+    func didStartZoomingPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat)
     /// ZoomScale changed - the user is in the process of zooming in/out of the spread containing the specified pages.
-    func didZoomPagesForVerso(verso:VersoView, zoomingPageIndexes:NSIndexSet, zoomScale:CGFloat)
+    func didZoomPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat)
     /// The user finished zooming in/out of the spread containing the specified pages. ZoomScale is the how zoomed in we are when zooming finishes.
-    func didEndZoomingPagesForVerso(verso:VersoView, zoomingPageIndexes:NSIndexSet, zoomScale:CGFloat)
+    func didEndZoomingPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat)
 }
 
 /// Default implementation of delegate does nothing. This makes the delegate methods optional.
 public extension VersoViewDelegate {
-    func currentPageIndexesChangedForVerso(verso:VersoView, pageIndexes:NSIndexSet, added:NSIndexSet, removed:NSIndexSet) {}
-    func visiblePageIndexesChangedForVerso(verso:VersoView, pageIndexes:NSIndexSet, added:NSIndexSet, removed:NSIndexSet) {}
-    func didStartZoomingPagesForVerso(verso:VersoView, zoomingPageIndexes:NSIndexSet, zoomScale:CGFloat) {}
-    func didZoomPagesForVerso(verso:VersoView, zoomingPageIndexes:NSIndexSet, zoomScale:CGFloat) {}
-    func didEndZoomingPagesForVerso(verso:VersoView, zoomingPageIndexes:NSIndexSet, zoomScale:CGFloat) {}
+    func currentPageIndexesChanged(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet) {}
+    func visiblePageIndexesChanged(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet) {}
+    func didStartZoomingPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat) {}
+    func didZoomPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat) {}
+    func didEndZoomingPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat) {}
 }
 
 
@@ -44,58 +44,58 @@ public extension VersoViewDelegate {
 public protocol VersoViewDataSource : VersoViewDataSourceOptional {
     
     /// The SpreadConfiguration that defines the page count, and layout of the pages, within this verso.
-    func spreadConfigurationForVerso(verso:VersoView, size:CGSize) -> VersoSpreadConfiguration
+    func spreadConfiguration(verso:VersoView, size:CGSize) -> VersoSpreadConfiguration
     
     /// Gives the dataSource a chance to configure the pageView. 
     /// This must not take a long time, as it is called during scrolling.
     /// The pageView's `pageIndex` property will have been set, but its size will not be correct
-    func configurePageForVerso(verso:VersoView, pageView:VersoPageView)
+    func configurePage(verso:VersoView, pageView:VersoPageView)
     
     
     /// What subclass of VersoPageView should be used.
-    func pageViewClassForVerso(verso:VersoView, pageIndex:Int) -> VersoPageViewClass
+    func pageViewClass(verso:VersoView, pageIndex:Int) -> VersoPageViewClass
     
 }
 
 public protocol VersoViewDataSourceOptional : class {
     /// How many pages before the currently visible pageIndexes to preload. 
     /// Ignored if `preloadPageIndexesForVerso` does not return nil.
-    func previousPageCountToPreloadForVerso(verso:VersoView, visiblePageIndexes:NSIndexSet) -> Int
+    func previousPageCountToPreload(verso:VersoView, visiblePageIndexes:IndexSet) -> Int
     
     /// How many pages after the currently visible pageIndexes to preload.
     /// Ignored if `preloadPageIndexesForVerso` does not return nil.
-    func nextPageCountToPreloadForVerso(verso:VersoView, visiblePageIndexes:NSIndexSet) -> Int
+    func nextPageCountToPreload(verso:VersoView, visiblePageIndexes:IndexSet) -> Int
     
     /// Gives you a chance to modify the page indexes to preload around the visible page indexes.
     /// This is for more advanced customization of the preloading indexes.
     /// The `preloadPageIndexes` property is based on the prev/nextPageCount dataSource results.
     /// If nil (default), set that is passed as `preloadPageIndexes` will be used unmodified
-    func adjustPreloadPageIndexesForVerso(verso:VersoView, visiblePageIndexes:NSIndexSet, preloadPageIndexes:NSIndexSet) -> NSIndexSet?
+    func adjustPreloadPageIndexes(verso:VersoView, visiblePageIndexes:IndexSet, preloadPageIndexes:IndexSet) -> IndexSet?
     
     /// What color should the background fade to when zooming.
-    func zoomBackgroundColorForVerso(verso:VersoView, zoomingPageIndexes:NSIndexSet) -> UIColor
+    func zoomBackgroundColor(verso:VersoView, zoomingPageIndexes:IndexSet) -> UIColor
     
     /// Return a view to overlay over the currently visible pages. 
     /// This is called every time the layout changes, or the user finishes scrolling.
-    func spreadOverlayViewForVerso(verso:VersoView, overlaySize:CGSize, pageFrames:[Int:CGRect]) -> UIView?
+    func spreadOverlayView(verso:VersoView, overlaySize:CGSize, pageFrames:[Int:CGRect]) -> UIView?
 }
 
 /// Default Values for Optional DataSource
 public extension VersoViewDataSourceOptional {
     
-    func previousPageCountToPreloadForVerso(verso:VersoView, visiblePageIndexes:NSIndexSet) -> Int {
+    func previousPageCountToPreload(verso:VersoView, visiblePageIndexes:IndexSet) -> Int {
         return 2
     }
-    func nextPageCountToPreloadForVerso(verso:VersoView, visiblePageIndexes:NSIndexSet) -> Int {
+    func nextPageCountToPreload(verso:VersoView, visiblePageIndexes:IndexSet) -> Int {
         return 6
     }
-    func adjustPreloadPageIndexesForVerso(verso:VersoView, visiblePageIndexes:NSIndexSet, preloadPageIndexes:NSIndexSet) -> NSIndexSet? {
+    func adjustPreloadPageIndexes(verso:VersoView, visiblePageIndexes:IndexSet, preloadPageIndexes:IndexSet) -> IndexSet? {
         return nil
     }
-    func zoomBackgroundColorForVerso(verso:VersoView, zoomingPageIndexes:NSIndexSet) -> UIColor {
+    func zoomBackgroundColor(verso:VersoView, zoomingPageIndexes:IndexSet) -> UIColor {
         return UIColor(white: 0, alpha: 0.7)
     }
-    func spreadOverlayViewForVerso(verso:VersoView, overlaySize:CGSize, pageFrames:[Int:CGRect]) -> UIView? {
+    func spreadOverlayView(verso:VersoView, overlaySize:CGSize, pageFrames:[Int:CGRect]) -> UIView? {
         return nil
     }
 }
@@ -107,14 +107,14 @@ extension VersoView : VersoViewDataSourceOptional {}
 // MARK: -
 
 /// The class that should be sub-classed to build your own pages
-public class VersoPageView : UIView {
-    public private(set) var pageIndex:Int = NSNotFound
+open class VersoPageView : UIView {
+    public fileprivate(set) var pageIndex:Int = NSNotFound
     
     /// make init(frame:) required
     required override public init(frame: CGRect) { super.init(frame: frame) }
     required public init?(coder aDecoder: NSCoder) { super.init(coder: aDecoder) }
     
-    public override func sizeThatFits(size: CGSize) -> CGSize {
+    open override func sizeThatFits(_ size: CGSize) -> CGSize {
         return size
     }
 }
@@ -144,7 +144,7 @@ public class VersoView : UIView {
     }
     
     
-    private var performingLayout:Bool = false
+    fileprivate var performingLayout:Bool = false
     
     override public func layoutSubviews() {
         assert(dataSource != nil, "You must provide a VersoDataSource")
@@ -158,7 +158,7 @@ public class VersoView : UIView {
         
         // get a new spread configuration
         if spreadConfiguration == nil || versoSize != newVersoSize {
-            newSpreadConfig = dataSource?.spreadConfigurationForVerso(self, size: newVersoSize)
+            newSpreadConfig = dataSource?.spreadConfiguration(verso:self, size: newVersoSize)
         }
         
         let willRelayout = versoSize != newVersoSize || spreadConfiguration != newSpreadConfig
@@ -208,13 +208,13 @@ public class VersoView : UIView {
     
     
     /// The page indexes of the spread that was centered when scrolling animations last ended
-    public private(set) var currentPageIndexes:NSIndexSet = NSIndexSet()
+    public fileprivate(set) var currentPageIndexes:IndexSet = IndexSet()
     
     /// The page indexes of all the pageViews that are currently visible
-    public private(set) var visiblePageIndexes:NSIndexSet = NSIndexSet()
+    public fileprivate(set) var visiblePageIndexes:IndexSet = IndexSet()
     
     /// The spreadConfiguration provided by the dataSource
-    public private(set) var spreadConfiguration:VersoSpreadConfiguration?
+    public fileprivate(set) var spreadConfiguration:VersoSpreadConfiguration?
     
     
     public var zoomDoubleTapGestureRecognizer:UITapGestureRecognizer? {
@@ -224,7 +224,7 @@ public class VersoView : UIView {
     
     /// This triggers a refetch of info from the dataSource, and all the pageViews are re-configured.
     public func reloadPages() {
-        dispatch_async(dispatch_get_main_queue()) { [weak self] in
+        DispatchQueue.main.async { [weak self] in
             guard self != nil else { return }
             
             for (_, pageView) in self!.pageViewsByPageIndex {
@@ -233,9 +233,9 @@ public class VersoView : UIView {
             self?.pageViewsByPageIndex = [:]
             
             self?.currentSpreadIndex = nil
-            self?.currentPageIndexes = NSIndexSet()
+            self?.currentPageIndexes = IndexSet()
             self?.centeredSpreadIndex = nil
-            self?.visiblePageIndexes = NSIndexSet()
+            self?.visiblePageIndexes = IndexSet()
             
             self?.spreadConfiguration = nil
             
@@ -244,15 +244,15 @@ public class VersoView : UIView {
     }
     
     /// Scrolls the VersoView to point to a specific page. This is a no-op if the page doesnt exist.
-    public func jumpToPage(pageIndex:Int, animated:Bool) {
-        dispatch_async(dispatch_get_main_queue()) { [weak self] in
+    public func jump(toPageIndex:Int, animated:Bool) {
+        DispatchQueue.main.async { [weak self] in
             
             guard self?.spreadConfiguration != nil else {
                 return
             }
             
-            if let spreadIndex = self?.spreadConfiguration?.spreadIndexForPageIndex(pageIndex) {
-                self?.pageScrollView.setContentOffset(VersoView.calc_scrollOffsetForSpread(spreadIndex, spreadFrames:self!.spreadFrames, versoSize: self!.versoSize), animated: animated)
+            if let spreadIndex = self?.spreadConfiguration?.spreadIndex(forPageIndex:toPageIndex) {
+                self?.pageScrollView.setContentOffset(VersoView.calc_scrollOffset(spreadIndex: spreadIndex, spreadFrames:self!.spreadFrames, versoSize: self!.versoSize), animated: animated)
             }
         }
     }
@@ -260,22 +260,22 @@ public class VersoView : UIView {
     
     /// This causes all the preloaded pages to be reconfigured by the dataSource
     public func reconfigureVisiblePages() {
-        dispatch_async(dispatch_get_main_queue()) { [weak self] in
+        DispatchQueue.main.async { [weak self] in
             guard self != nil else { return }
             for (_, pageView) in self!.pageViewsByPageIndex {
-                self!._configurePageView(pageView)
+                self!._configure(pageView:pageView)
             }
         }
     }
     
     
     /// Return the VersoPageView for a pageIndex, or nil if the pageView is not in memory
-    public func getPageViewIfLoaded(pageIndex:Int) -> VersoPageView? {
+    public func getPageViewIfLoaded(_ pageIndex:Int) -> VersoPageView? {
         return pageViewsByPageIndex[pageIndex]
     }
     
     public func reconfigureSpreadOverlay() {
-        dispatch_async(dispatch_get_main_queue()) { [weak self] in
+        DispatchQueue.main.async { [weak self] in
             guard self != nil else { return }
             
             self?._updateSpreadOverlay()
@@ -291,38 +291,38 @@ public class VersoView : UIView {
     // MARK: - Private Proprties
     
     /// The current size of this VersoView
-    private var versoSize:CGSize = CGSizeZero
+    fileprivate var versoSize:CGSize = CGSize.zero
     
     /// Precalculated frames for all spreads
-    private var spreadFrames:[CGRect] = []
+    fileprivate var spreadFrames:[CGRect] = []
     
     /// Precalculated initial (non-resized) frames for all pages
-    private var pageFrames:[CGRect] = []
+    fileprivate var pageFrames:[CGRect] = []
     
     /// the pageIndexes that are embedded in the zoomView
-    private var zoomingPageIndexes:NSIndexSet = NSIndexSet()
+    fileprivate var zoomingPageIndexes:IndexSet = IndexSet()
     
     
     /// the pageViews that are currently being used
-    private var pageViewsByPageIndex = [Int:VersoPageView]()
+    fileprivate var pageViewsByPageIndex = [Int:VersoPageView]()
 
     /// the spreadIndex under the center of the verso (with some magic for first/last spreads)
-    private var centeredSpreadIndex:Int?
-    private var centeredSpreadPageIndexes:NSIndexSet = NSIndexSet()
+    fileprivate var centeredSpreadIndex:Int?
+    fileprivate var centeredSpreadPageIndexes:IndexSet = IndexSet()
 
     /// the `centeredSpreadIndex` when animation ended
-    private var currentSpreadIndex:Int?
+    fileprivate var currentSpreadIndex:Int?
 
     /// the centeredSpreadIndex when we started dragging
-    private var dragStartSpreadIndex:Int = 0
+    fileprivate var dragStartSpreadIndex:Int = 0
     /// the visibleRect when the drag starts
-    private var dragStartVisibleRect:CGRect = CGRectZero
+    fileprivate var dragStartVisibleRect:CGRect = CGRect.zero
     
     /// The background color provided by the datasource when we started zooming.
-    private var zoomTargetBackgroundColor:UIColor?
+    fileprivate var zoomTargetBackgroundColor:UIColor?
     
     /// A neat trick to allow pure-swift optional protocol methods: http://blog.stablekernel.com/optional-protocol-methods-in-pure-swift
-    private var dataSourceOptional: VersoViewDataSourceOptional {
+    fileprivate var dataSourceOptional: VersoViewDataSourceOptional {
         return dataSource ?? self
     }
 
@@ -335,7 +335,7 @@ public class VersoView : UIView {
         Then recalculates the contentSize & offset of the pageScrollView.
         Finally re-position all the pageViews
      */
-    private func _updateSpreadPositions() {
+    fileprivate func _updateSpreadPositions() {
         guard let config = spreadConfiguration else {
             assert(spreadConfiguration != nil, "You must provide a VersoSpreadConfiguration")
             return
@@ -343,11 +343,7 @@ public class VersoView : UIView {
         
         
         // figure out which page we should scroll to
-        var targetPageIndex = centeredSpreadPageIndexes.firstIndex
-        if targetPageIndex == NSNotFound {
-            targetPageIndex = 0
-        }
-        
+        let targetPageIndex = centeredSpreadPageIndexes.first ?? 0
         
         
         CATransaction.begin() // start a transaction, so we get a completion handler
@@ -358,7 +354,7 @@ public class VersoView : UIView {
         // when the layout is complete, move the active page views into the zoomview
         CATransaction.setCompletionBlock { [weak self] in
             
-            self?.pageScrollView.scrollEnabled = true
+            self?.pageScrollView.isScrollEnabled = true
             
             self?._enableZoomingForCurrentPageViews(force: true)
             
@@ -372,21 +368,21 @@ public class VersoView : UIView {
 
         
         // disable scrolling
-        pageScrollView.scrollEnabled = false
+        pageScrollView.isScrollEnabled = false
         
         
         // (p)recalculate new frames for all spreads & pages
-        spreadFrames = VersoView.calc_spreadFrames(versoSize, spreadConfig: config)
-        pageFrames = VersoView.calc_pageFrames(spreadFrames, spreadConfig: config)
+        spreadFrames = VersoView.calc_spreadFrames(versoSize: versoSize, spreadConfig: config)
+        pageFrames = VersoView.calc_pageFrames(spreadFrames: spreadFrames, spreadConfig: config)
         
         
         // update the contentSize to match the new spreadFrames
-        pageScrollView.contentSize = VersoView.calc_contentSize(spreadFrames)
+        pageScrollView.contentSize = VersoView.calc_contentSize(spreadFrames: spreadFrames)
         
 
         // insta-scroll to that spread
-        let targetSpreadIndex = config.spreadIndexForPageIndex(targetPageIndex)
-        pageScrollView.setContentOffset(VersoView.calc_scrollOffsetForSpread(targetSpreadIndex ?? 0, spreadFrames:spreadFrames, versoSize: versoSize), animated: false)
+        let targetSpreadIndex = config.spreadIndex(forPageIndex:targetPageIndex)
+        pageScrollView.setContentOffset(VersoView.calc_scrollOffset(spreadIndex:targetSpreadIndex ?? 0, spreadFrames:spreadFrames, versoSize: versoSize), animated: false)
         
         
         _updateVisiblePageIndexes()
@@ -404,23 +400,25 @@ public class VersoView : UIView {
 
     }
     
-    private func _frameForPageViews(pageIndexes:NSIndexSet) -> CGRect {
+    fileprivate func _frameForPageViews(_ pageIndexes:IndexSet) -> CGRect {
         
         var combinedFrame:CGRect?
-        for pageIndex in pageIndexes {
-            if let pageView = pageViewsByPageIndex[pageIndex] {
-                let pageFrame = pageView.frame
+        if pageIndexes.count > 0 {
+            for pageIndex in pageIndexes {
+                if let pageView = pageViewsByPageIndex[pageIndex] {
+                    let pageFrame = pageView.frame
                 
-                combinedFrame = combinedFrame?.union(pageFrame) ?? pageFrame
+                    combinedFrame = combinedFrame?.union(pageFrame) ?? pageFrame
+                }
             }
         }
         
-        return combinedFrame ?? CGRectZero
+        return combinedFrame ?? CGRect.zero
     }
     
     
     /// This handles the creation/re-use and configuration of pageViews. This is triggered whilst the user scrolls.
-    private func _preparePageViews() {
+    fileprivate func _preparePageViews() {
 
         let visibleFrame = pageScrollView.bounds
         
@@ -431,7 +429,7 @@ public class VersoView : UIView {
         var preparedPageViews = [Int:VersoPageView]()
         
         // page indexes that dont have a view
-        let missingPageViewIndexes = NSMutableIndexSet(indexSet: pageIndexesToPrepare)
+        var missingPageViewIndexes = pageIndexesToPrepare
         // page views that aren't needed anymore
         var recyclablePageViews = [VersoPageView]()
         
@@ -439,48 +437,47 @@ public class VersoView : UIView {
         // go through all the page views we have, and find out what we need
         for (pageIndex, pageView) in pageViewsByPageIndex {
             
-            if pageIndexesToPrepare.containsIndex(pageIndex) == false && zoomingPageIndexes.containsIndex(pageIndex) == false {
+            if pageIndexesToPrepare.contains(pageIndex) == false && zoomingPageIndexes.contains(pageIndex) == false {
                 // we have a page view that can be recycled
-                    recyclablePageViews.append(pageView)
+                recyclablePageViews.append(pageView)
             } else {
-                missingPageViewIndexes.removeIndex(pageIndex)
+                missingPageViewIndexes.remove(pageIndex)
                 preparedPageViews[pageIndex] = pageView
             }
         }
     
         
-        
-        // get pageviews for all the missing indexes
-        for pageIndex in missingPageViewIndexes {
-            
-            var pageView:VersoPageView? = nil
-            
-            // get the class of the page at that index
-            let pageViewClass:VersoPageViewClass = dataSource?.pageViewClassForVerso(self, pageIndex: pageIndex) ?? VersoPageView.self
-            
-            // try to find a pageView of the correct type from the recycle bin
-            if let recycleIndex = recyclablePageViews.indexOf({ (recyclablePageView:VersoPageView) -> Bool in
-                return recyclablePageView.dynamicType === pageViewClass
-            }) {
-                pageView = recyclablePageViews.removeAtIndex(recycleIndex)
-            }
-            
-            // nothing in the bin - make a new one
-            if pageView == nil {
-                // need to give new PageViews an initial frame otherwise they fly in from 0,0
-                let initialFrame = pageFrames[verso_safe:pageIndex] ?? CGRectZero
+        if missingPageViewIndexes.count > 0 {
+            // get pageviews for all the missing indexes
+            for pageIndex in missingPageViewIndexes {
                 
-                pageView = pageViewClass.init(frame:initialFrame)
-                pageScrollView.insertSubview(pageView!, belowSubview: zoomView)
+                var pageView:VersoPageView? = nil
+                
+                // get the class of the page at that index
+                let pageViewClass:VersoPageViewClass = dataSource?.pageViewClass(verso:self, pageIndex: pageIndex) ?? VersoPageView.self
+                
+                // try to find a pageView of the correct type from the recycle bin
+                if let recycleIndex = recyclablePageViews.index(where: { (recyclablePageView:VersoPageView) -> Bool in
+                    return type(of: recyclablePageView) === pageViewClass
+                }) {
+                    pageView = recyclablePageViews.remove(at: recycleIndex)
+                }
+                
+                // nothing in the bin - make a new one
+                if pageView == nil {
+                    // need to give new PageViews an initial frame otherwise they fly in from 0,0
+                    let initialFrame = pageFrames[verso_safe:pageIndex] ?? CGRect.zero
+                    
+                    pageView = pageViewClass.init(frame:initialFrame)
+                    pageScrollView.insertSubview(pageView!, belowSubview: zoomView)
+                }
+                
+                pageView!.pageIndex = pageIndex
+                _configure(pageView:pageView!)
+                
+                preparedPageViews[pageIndex] = pageView!
             }
-            
-            pageView!.pageIndex = pageIndex
-            _configurePageView(pageView!)
-            
-            preparedPageViews[pageIndex] = pageView!
         }
-        
-        
         
         // clean up any unused recyclables
         for pageView in recyclablePageViews {
@@ -491,27 +488,27 @@ public class VersoView : UIView {
         // do final re-positioning of the pageViews
         for (pageIndex, pageView) in preparedPageViews {
             
-            if zoomingPageIndexes.containsIndex(pageIndex) == true {
+            if zoomingPageIndexes.contains(pageIndex) == true {
                 continue
             }
 
-            pageView.transform = CGAffineTransformIdentity
-            pageView.frame = _resizedFrameForPageView(pageView)
+            pageView.transform = CGAffineTransform.identity
+            pageView.frame = _resizedFrame(pageView:pageView)
             pageView.alpha = 1
             
             
             // find out how far the pageView is from the visible pages
             var indexDist = 0
-            if pageView.pageIndex > visiblePageIndexes.lastIndex {
-                indexDist = pageView.pageIndex - visiblePageIndexes.lastIndex
-            } else if pageView.pageIndex < visiblePageIndexes.firstIndex {
-                indexDist = pageView.pageIndex - visiblePageIndexes.firstIndex
+            if pageView.pageIndex > visiblePageIndexes.last {
+                indexDist = pageView.pageIndex - visiblePageIndexes.last!
+            } else if pageView.pageIndex < visiblePageIndexes.first {
+                indexDist = pageView.pageIndex - visiblePageIndexes.first!
             }
             
             // style the non-visible pages
             if indexDist != 0 {
                 pageView.alpha = 0
-                pageView.transform = CGAffineTransformMakeTranslation(visibleFrame.width/2 * CGFloat(indexDist), 0)
+                pageView.transform = CGAffineTransform(translationX: visibleFrame.width/2 * CGFloat(indexDist), y: 0)
             }
         }
 
@@ -519,48 +516,49 @@ public class VersoView : UIView {
     }
     
     /// Asks the datasource for which pageIndexes around the specified set we should pre-load.
-    private func _pageIndexesToPreloadAround(pageIndexes:NSIndexSet)->NSIndexSet {
+    fileprivate func _pageIndexesToPreloadAround(_ pageIndexes:IndexSet)->IndexSet {
         guard let config = spreadConfiguration else {
-            return NSIndexSet()
+            return IndexSet()
         }
         
         guard pageIndexes.count > 0 && config.pageCount > 0 else {
-            return NSIndexSet()
+            return IndexSet()
         }
         
         // get all the page indexes we are going to config and position, based on delegate callbacks
-        var preloadPageIndexes = NSMutableIndexSet(indexSet: pageIndexes)
+        var preloadPageIndexes = pageIndexes
         
-        let beforeCount = dataSourceOptional.previousPageCountToPreloadForVerso(self, visiblePageIndexes: pageIndexes)
-        let afterCount = dataSourceOptional.nextPageCountToPreloadForVerso(self, visiblePageIndexes: pageIndexes)
+        let beforeCount = dataSourceOptional.previousPageCountToPreload(verso:self, visiblePageIndexes: pageIndexes)
+        let afterCount = dataSourceOptional.nextPageCountToPreload(verso:self, visiblePageIndexes: pageIndexes)
         
-        let newFirstIndex = max(pageIndexes.firstIndex-beforeCount, 0)
-        let newLastIndex = min(pageIndexes.lastIndex+afterCount, config.pageCount-1)
+        let newFirstIndex = max(pageIndexes.first!-beforeCount, 0)
+        let newLastIndex = min(pageIndexes.last!+afterCount, config.pageCount-1)
         
-        preloadPageIndexes.addIndexesInRange(NSMakeRange(newFirstIndex, (newLastIndex+1) - newFirstIndex))
+        preloadPageIndexes.insert(integersIn:newFirstIndex...newLastIndex)
         
-        
-        if let adjustedPreloadIndexes = dataSourceOptional.adjustPreloadPageIndexesForVerso(self, visiblePageIndexes: pageIndexes, preloadPageIndexes: preloadPageIndexes) {
-            preloadPageIndexes = NSMutableIndexSet(indexSet: adjustedPreloadIndexes)
+        if let adjustedPreloadIndexes = dataSourceOptional.adjustPreloadPageIndexes(verso:self, visiblePageIndexes: pageIndexes, preloadPageIndexes: preloadPageIndexes) {
+            preloadPageIndexes = adjustedPreloadIndexes
         }
         
-        // remove over-bounds
-        if preloadPageIndexes.lastIndex >= config.pageCount {
-            preloadPageIndexes.removeIndexesInRange(NSMakeRange(config.pageCount, preloadPageIndexes.lastIndex - (config.pageCount-1)))
+        if preloadPageIndexes.last! >= config.pageCount {
+            preloadPageIndexes.remove(integersIn:config.pageCount ... preloadPageIndexes.last!)
         }
-
+        if preloadPageIndexes.first! < 0 {
+            preloadPageIndexes.remove(integersIn:preloadPageIndexes.first! ..< 0)
+        }
+        
         return preloadPageIndexes
     }
     
     /// Asks the datasource to configure its pageview (done from preparePageView
-    private func _configurePageView(pageView:VersoPageView) {
+    fileprivate func _configure(pageView:VersoPageView) {
         if pageView.pageIndex != NSNotFound {
-            dataSource?.configurePageForVerso(self, pageView: pageView)
+            dataSource?.configurePage(verso:self, pageView: pageView)
         }
     }
     
     /// ask the pageView for the size that it wants to be (within a max page frame size)
-    private func _resizedFrameForPageView(pageView:VersoPageView) -> CGRect {
+    fileprivate func _resizedFrame(pageView:VersoPageView) -> CGRect {
         
         let maxFrame = pageFrames[pageView.pageIndex]
         let pageSize = pageView.sizeThatFits(maxFrame.size)
@@ -568,18 +566,18 @@ public class VersoView : UIView {
         
         var pageFrame = maxFrame
         pageFrame.size = pageSize
-        pageFrame.origin.y = round(CGRectGetMidY(maxFrame) - pageSize.height/2)
+        pageFrame.origin.y = round(maxFrame.midY - pageSize.height/2)
         
         
-        let alignment = spreadConfiguration?.pageAlignmentForPage(pageView.pageIndex) ?? .Center
+        let alignment = spreadConfiguration?.pageAlignment(forPageIndex:pageView.pageIndex) ?? .center
         
         switch alignment {
-        case .Left:
-            pageFrame.origin.x = CGRectGetMinX(maxFrame)
-        case .Right:
-            pageFrame.origin.x = CGRectGetMaxX(maxFrame) - pageSize.width
-        case .Center:
-            pageFrame.origin.x = round(CGRectGetMidX(maxFrame) - pageSize.width/2)
+        case .left:
+            pageFrame.origin.x = maxFrame.minX
+        case .right:
+            pageFrame.origin.x = maxFrame.maxX - pageSize.width
+        case .center:
+            pageFrame.origin.x = round(maxFrame.midX - pageSize.width/2)
         }
         
         return pageFrame
@@ -598,7 +596,7 @@ public class VersoView : UIView {
         This will also update the centeredSpreadPageIndexes
         This is called while the user scrolls
      */
-    private func _updateCenteredSpreadIndex() {
+    fileprivate func _updateCenteredSpreadIndex() {
         guard let config = spreadConfiguration else {
             return
         }
@@ -653,7 +651,7 @@ public class VersoView : UIView {
         
         centeredSpreadIndex = newCenteredSpreadIndex
         
-        centeredSpreadPageIndexes = centeredSpreadIndex != nil ? config.pageIndexesForSpreadIndex(centeredSpreadIndex!) : NSIndexSet()
+        centeredSpreadPageIndexes = centeredSpreadIndex != nil ? config.pageIndexes(forSpreadIndex:centeredSpreadIndex!) : IndexSet()
     }
     
     
@@ -662,7 +660,7 @@ public class VersoView : UIView {
         This is called whenever scrolling animations finish.
         Will notify the delegate if there is a change
      */
-    private func _updateCurrentSpreadIndex() {
+    fileprivate func _updateCurrentSpreadIndex() {
         guard let config = spreadConfiguration else {
             return
         }
@@ -673,48 +671,43 @@ public class VersoView : UIView {
         
         
         // update currentPageIndexes
-        let newCurrentPageIndexes = currentSpreadIndex != nil ? config.pageIndexesForSpreadIndex(currentSpreadIndex!) : NSIndexSet()
+        let newCurrentPageIndexes = currentSpreadIndex != nil ? config.pageIndexes(forSpreadIndex: currentSpreadIndex!) : IndexSet()
         
-        guard newCurrentPageIndexes.isEqualToIndexSet(currentPageIndexes) == false else {
+        guard newCurrentPageIndexes != currentPageIndexes else {
             return
         }
         
-        // calc diff
-        let addedIndexes = NSMutableIndexSet(indexSet:newCurrentPageIndexes)
-        addedIndexes.removeIndexes(currentPageIndexes)
         
-        let removedIndexes = NSMutableIndexSet(indexSet:currentPageIndexes)
-        removedIndexes.removeIndexes(newCurrentPageIndexes)
+        // calc diff
+        let addedIndexes = newCurrentPageIndexes.subtracting(currentPageIndexes)
+        let removedIndexes = currentPageIndexes.subtracting(newCurrentPageIndexes)
         
         currentPageIndexes = newCurrentPageIndexes
         
         // notify delegate of changes to current page
-        delegate?.currentPageIndexesChangedForVerso(self, pageIndexes: currentPageIndexes, added: addedIndexes, removed: removedIndexes)
+        delegate?.currentPageIndexesChanged(verso:self, pageIndexes: currentPageIndexes, added: addedIndexes, removed: removedIndexes)
     }
     
     
     
-    private func _updateVisiblePageIndexes() {
+    fileprivate func _updateVisiblePageIndexes() {
         
         let visibleFrame = pageScrollView.bounds
         
-        let newVisiblePageIndexes = VersoView.calc_visiblePageIndexesInRect(visibleFrame, pageFrames: pageFrames, fullyVisible: false)
+        let newVisiblePageIndexes = VersoView.calc_visiblePageIndexes(in: visibleFrame, pageFrames: pageFrames, fullyVisible: false)
 
-        guard newVisiblePageIndexes.isEqualToIndexSet(visiblePageIndexes) == false else {
+        guard newVisiblePageIndexes != visiblePageIndexes else {
             return
         }
         
         // calc diff
-        let addedIndexes = NSMutableIndexSet(indexSet:newVisiblePageIndexes)
-        addedIndexes.removeIndexes(visiblePageIndexes)
-        
-        let removedIndexes = NSMutableIndexSet(indexSet:visiblePageIndexes)
-        removedIndexes.removeIndexes(newVisiblePageIndexes)
+        let addedIndexes = newVisiblePageIndexes.subtracting(visiblePageIndexes)
+        let removedIndexes = visiblePageIndexes.subtracting(newVisiblePageIndexes)
         
         visiblePageIndexes = newVisiblePageIndexes
         
         // notify delegate of changes to current page
-        delegate?.visiblePageIndexesChangedForVerso(self, pageIndexes: visiblePageIndexes, added: addedIndexes, removed: removedIndexes)
+        delegate?.visiblePageIndexesChanged(verso:self, pageIndexes: visiblePageIndexes, added: addedIndexes, removed: removedIndexes)
 
     }
     
@@ -727,11 +720,11 @@ public class VersoView : UIView {
     
     // MARK: - Scrolling Pages
     
-    private func _didStartScrolling() {
+    fileprivate func _didStartScrolling() {
         // disable scrolling
         zoomView.maximumZoomScale = 1.0
     }
-    @objc private func _didFinishScrolling() {
+    @objc fileprivate func _didFinishScrolling() {
         // dont do any post-scrolling layout if the user rotated the device while scroll-animations were being performed.
         if performingLayout == false {
             
@@ -748,25 +741,26 @@ public class VersoView : UIView {
     }
     
     
-    private func _updateSpreadOverlay() {
-        
+    fileprivate func _updateSpreadOverlay() {
         
         var spreadPageFrames:[Int:CGRect] = [:]
-        for pageIndex in zoomingPageIndexes {
-            if let pageView = pageViewsByPageIndex[pageIndex] {
-                
-                let pageViewFrame = pageView.convertRect(pageView.bounds, toView: zoomViewContents)
-                
-                spreadPageFrames[pageIndex] = pageViewFrame
+        if zoomingPageIndexes.count > 0 {
+            for pageIndex in zoomingPageIndexes {
+                if let pageView = pageViewsByPageIndex[pageIndex] {
+                    
+                    let pageViewFrame = pageView.convert(pageView.bounds, to: zoomViewContents)
+                    
+                    spreadPageFrames[pageIndex] = pageViewFrame
+                }
             }
         }
 
-        let newSpreadOverlayView = spreadPageFrames.count > 0 ? dataSourceOptional.spreadOverlayViewForVerso(self, overlaySize:zoomViewContents.bounds.size, pageFrames:spreadPageFrames) : nil
+        let newSpreadOverlayView = spreadPageFrames.count > 0 ? dataSourceOptional.spreadOverlayView(verso:self, overlaySize:zoomViewContents.bounds.size, pageFrames:spreadPageFrames) : nil
         
         if newSpreadOverlayView != spreadOverlayView {
             spreadOverlayView?.removeFromSuperview()
             spreadOverlayView = newSpreadOverlayView
-            spreadOverlayView?.autoresizingMask = [.FlexibleWidth, .FlexibleHeight]
+            spreadOverlayView?.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         }
         
         
@@ -781,10 +775,10 @@ public class VersoView : UIView {
     
     // MARK: - Zooming
     
-    private func _updateMaxZoomScale() {
+    fileprivate func _updateMaxZoomScale() {
         // update zoom scale based on the current spread
         if let spreadIndex = currentSpreadIndex,
-            let zoomScale = spreadConfiguration?.spreadPropertyForSpreadIndex(spreadIndex)?.maxZoomScale {
+            let zoomScale = spreadConfiguration?.spreadProperty(forSpreadIndex:spreadIndex)?.maxZoomScale {
             
             zoomView.maximumZoomScale = zoomScale
         } else {
@@ -793,19 +787,21 @@ public class VersoView : UIView {
 
     }
     /// Remove all pageViews that are in the zoomView, placing them correctly back in the pageScrollView
-    private func _resetZoomView() {
+    fileprivate func _resetZoomView() {
         
         // reset previous zooming pageViews
-        for pageIndex in zoomingPageIndexes {            
-            if let pageView = pageViewsByPageIndex[pageIndex] {
-                pageScrollView.insertSubview(pageView, belowSubview: zoomView)
-                
-                pageView.transform = CGAffineTransformIdentity
-                pageView.frame = _resizedFrameForPageView(pageView)
-                pageView.alpha = 1
+        if zoomingPageIndexes.count > 0 {
+            for pageIndex in zoomingPageIndexes {
+                if let pageView = pageViewsByPageIndex[pageIndex] {
+                    pageScrollView.insertSubview(pageView, belowSubview: zoomView)
+                    
+                    pageView.transform = CGAffineTransform.identity
+                    pageView.frame = _resizedFrame(pageView:pageView)
+                    pageView.alpha = 1
+                }
             }
         }
-        
+    
         if zoomView.zoomScale != 1 && zoomingPageIndexes.count > 0 {
             _didStartZooming()
             zoomView.zoomScale = 1.0
@@ -813,17 +809,17 @@ public class VersoView : UIView {
         }
         
         zoomView.maximumZoomScale = 1.0
-        zoomView.backgroundColor = UIColor.clearColor()
-        zoomingPageIndexes = NSIndexSet()
+        zoomView.backgroundColor = UIColor.clear
+        zoomingPageIndexes = IndexSet()
     }
     
-    private var spreadOverlayView:UIView?
+    fileprivate var spreadOverlayView:UIView?
     
     /**
      Resets the zoomView to correct location and adds pageviews that will be zoomed
      If `force` is false we will only enable zooming when the page indexes to zoom have changed.
      */
-    private func _enableZoomingForCurrentPageViews(force force:Bool) {
+    fileprivate func _enableZoomingForCurrentPageViews(force:Bool) {
         
         guard zoomingPageIndexes != currentPageIndexes || force else {
             return
@@ -839,8 +835,8 @@ public class VersoView : UIView {
         
         // reset the zoomview
         zoomView.zoomScale = 1.0
-        zoomView.contentInset = UIEdgeInsetsZero
-        zoomView.contentOffset = CGPointZero
+        zoomView.contentInset = UIEdgeInsets.zero
+        zoomView.contentOffset = CGPoint.zero
         
         // move zoomview visible frame
         zoomView.frame = pageScrollView.bounds
@@ -851,50 +847,52 @@ public class VersoView : UIView {
         
         
         // get the PageViews that will be in zoomview, and the combined frame for all those views
-        var combinedPageFrame = CGRectZero
+        var combinedPageFrame = CGRect.zero
         
         var activePageViews = [VersoPageView]()
-        for pageIndex in zoomingPageIndexes {
-            if let pageView = pageViewsByPageIndex[pageIndex] {
-                
-                activePageViews.append(pageView)
-                
-                let pageViewFrame = pageView.convertRect(pageView.bounds, toView: zoomView)
-                combinedPageFrame = combinedPageFrame==CGRectZero ? pageViewFrame : combinedPageFrame.union(pageViewFrame)
+        if zoomingPageIndexes.count > 0 {
+            for pageIndex in zoomingPageIndexes {
+                if let pageView = pageViewsByPageIndex[pageIndex] {
+                    
+                    activePageViews.append(pageView)
+                    
+                    let pageViewFrame = pageView.convert(pageView.bounds, to: zoomView)
+                    combinedPageFrame = combinedPageFrame==CGRect.zero ? pageViewFrame : combinedPageFrame.union(pageViewFrame)
+                }
             }
         }
-        
+    
         zoomView.contentSize = combinedPageFrame.size
         zoomViewContents.frame = combinedPageFrame
         
         for pageView in activePageViews {
             
-            let newPageFrame = zoomViewContents.convertRect(pageView.bounds, fromView: pageView)
+            let newPageFrame = zoomViewContents.convert(pageView.bounds, from: pageView)
             pageView.frame = newPageFrame
             zoomViewContents.addSubview(pageView)
         }
         
-        zoomViewContents.frame = CGRect(origin: CGPointZero, size: combinedPageFrame.size)
+        zoomViewContents.frame = CGRect(origin: CGPoint.zero, size: combinedPageFrame.size)
         
         zoomView.targetContentFrame = combinedPageFrame
         
         _updateSpreadOverlay()
     }
     
-    private func _didStartZooming() {
+    fileprivate func _didStartZooming() {
         if zoomingPageIndexes.count > 0 {
-            delegate?.didStartZoomingPagesForVerso(self, zoomingPageIndexes: zoomingPageIndexes, zoomScale: zoomView.zoomScale)
+            delegate?.didStartZoomingPages(verso:self, zoomingPageIndexes: zoomingPageIndexes, zoomScale: zoomView.zoomScale)
             
-            zoomTargetBackgroundColor = dataSourceOptional.zoomBackgroundColorForVerso(self, zoomingPageIndexes:zoomingPageIndexes)
+            zoomTargetBackgroundColor = dataSourceOptional.zoomBackgroundColor(verso:self, zoomingPageIndexes:zoomingPageIndexes)
         }
     }
     
-    private func _didZoom() {
+    fileprivate func _didZoom() {
         
         // fade in the zoomView's background as we zoom
         
         if zoomTargetBackgroundColor == nil {
-            zoomTargetBackgroundColor = dataSourceOptional.zoomBackgroundColorForVerso(self, zoomingPageIndexes:zoomingPageIndexes)
+            zoomTargetBackgroundColor = dataSourceOptional.zoomBackgroundColor(verso:self, zoomingPageIndexes:zoomingPageIndexes)
         }
         
         var maxAlpha:CGFloat = 1.0
@@ -903,24 +901,24 @@ public class VersoView : UIView {
         // alpha 0->0.7 zoom 1->1.5
         // x0 + ((x1-x0) / (y1-y0)) * (y-y0)
         let targetAlpha = min(0 + ((maxAlpha-0) / (1.5-1)) * (zoomView.zoomScale-1), maxAlpha)
-        zoomView.backgroundColor = zoomTargetBackgroundColor!.colorWithAlphaComponent(targetAlpha)
+        zoomView.backgroundColor = zoomTargetBackgroundColor!.withAlphaComponent(targetAlpha)
         
         if zoomingPageIndexes.count > 0 {
-            delegate?.didZoomPagesForVerso(self, zoomingPageIndexes: zoomingPageIndexes, zoomScale: zoomView.zoomScale)
+            delegate?.didZoomPages(verso:self, zoomingPageIndexes: zoomingPageIndexes, zoomScale: zoomView.zoomScale)
         }
     }
     
-    private func _didEndZooming() {
+    fileprivate func _didEndZooming() {
         if zoomView.zoomScale <= zoomView.minimumZoomScale + 0.01 {
-            pageScrollView.scrollEnabled = true
+            pageScrollView.isScrollEnabled = true
         }
         else {
-            pageScrollView.scrollEnabled = false
+            pageScrollView.isScrollEnabled = false
         }
         
         
         if zoomingPageIndexes.count > 0 {
-            delegate?.didEndZoomingPagesForVerso(self, zoomingPageIndexes: zoomingPageIndexes, zoomScale: zoomView.zoomScale)
+            delegate?.didEndZoomingPages(verso:self, zoomingPageIndexes: zoomingPageIndexes, zoomScale: zoomView.zoomScale)
         }
     }
     
@@ -930,7 +928,7 @@ public class VersoView : UIView {
     
     // MARK: - Subviews
     
-    private lazy var pageScrollView:UIScrollView = {
+    fileprivate lazy var pageScrollView:UIScrollView = {
         let view = UIScrollView(frame:self.frame)
         view.delegate = self
         view.decelerationRate = UIScrollViewDecelerationRateFast
@@ -939,7 +937,7 @@ public class VersoView : UIView {
     }()
     
     
-    private lazy var zoomView:InsetZoomView = {
+    fileprivate lazy var zoomView:InsetZoomView = {
         let view = InsetZoomView(frame:self.frame)
         
         view.addSubview(self.zoomViewContents)
@@ -953,7 +951,7 @@ public class VersoView : UIView {
         return view
     }()
     
-    private lazy var zoomViewContents:UIView = {
+    fileprivate lazy var zoomViewContents:UIView = {
         let view = UIView()
         return view
     }()
@@ -969,11 +967,11 @@ public class VersoView : UIView {
 
 extension VersoView : UIScrollViewDelegate {
     
-    public func scrollViewDidScroll(scrollView: UIScrollView) {
+    public func scrollViewDidScroll(_ scrollView: UIScrollView) {
         if scrollView == pageScrollView {
             
             // only update spreadIndex and pageViews during scroll when it was manually triggered
-            if scrollView.dragging == true || scrollView.decelerating == true || scrollView.tracking == true {
+            if scrollView.isDragging == true || scrollView.isDecelerating == true || scrollView.isTracking == true {
                 _updateCenteredSpreadIndex()
                 _updateVisiblePageIndexes()
                 _preparePageViews()
@@ -984,36 +982,36 @@ extension VersoView : UIScrollViewDelegate {
     
     
     // MARK: Animation
-    public func scrollViewDidEndScrollingAnimation(scrollView: UIScrollView) {
+    public func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
         if scrollView == pageScrollView {
             _didFinishScrolling()
         }
     }
-    public func scrollViewWillBeginDecelerating(scrollView: UIScrollView) {
+    public func scrollViewWillBeginDecelerating(_ scrollView: UIScrollView) {
         if scrollView == pageScrollView {
             // cancel any delayed didFinishScrolling requests - see `scrollViewDidEndDecelerating`
-            NSObject.cancelPreviousPerformRequestsWithTarget(self, selector: #selector(VersoView._didFinishScrolling), object: nil)
+            NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(VersoView._didFinishScrolling), object: nil)
         }
     }
-    public func scrollViewDidEndDecelerating(scrollView: UIScrollView) {
+    public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         if scrollView == pageScrollView {
             
-            var delay:NSTimeInterval = 0
+            var delay:TimeInterval = 0
             // There are some edge cases where, when dragging rapidly, we get a decel finished event, and then a bounce-back decel again
             // In that case (where scrolled out of bounds and decel finished) wait before triggering didEndScrolling
             // We delay rather than just not calling to make sure we dont end up in the situation where didEndScrolling is never called
-            if scrollView.bounces && (CGRectGetMaxX(scrollView.bounds) > scrollView.contentSize.width || CGRectGetMinX(scrollView.bounds) < 0 || CGRectGetMaxY(scrollView.bounds) > scrollView.contentSize.height || CGRectGetMinY(scrollView.bounds) < 0) {
+            if scrollView.bounces && (scrollView.bounds.maxX > scrollView.contentSize.width || scrollView.bounds.minX < 0 || scrollView.bounds.maxY > scrollView.contentSize.height || scrollView.bounds.minY < 0) {
                 delay = 0.2
             }
-            NSObject.cancelPreviousPerformRequestsWithTarget(self, selector: #selector(VersoView._didFinishScrolling), object: nil)
-            self.performSelector(#selector(VersoView._didFinishScrolling), withObject: nil, afterDelay: delay)
+            NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(VersoView._didFinishScrolling), object: nil)
+            self.perform(#selector(VersoView._didFinishScrolling), with: nil, afterDelay: delay)
         }
     }
     
     
     // MARK: Dragging
     
-    public func scrollViewWillBeginDragging(scrollView: UIScrollView) {
+    public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
         if scrollView == pageScrollView {
             
             guard spreadConfiguration?.spreadCount > 0 else {
@@ -1026,9 +1024,9 @@ extension VersoView : UIScrollViewDelegate {
             _didStartScrolling()
         }
     }
-    public func scrollViewWillEndDragging(scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+    public func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
         if scrollView == pageScrollView {
-            guard let config = spreadConfiguration where config.spreadCount > 0 else {
+            guard let config = spreadConfiguration , config.spreadCount > 0 else {
                 return
             }
             
@@ -1048,10 +1046,10 @@ extension VersoView : UIScrollViewDelegate {
                     
                     let changeOnPercentageVisible:CGFloat = 0.1                    
                     
-                    if visibleRect.origin.x > dragStartVisibleRect.origin.x && VersoView.calc_spreadVisibilityPercentage(targetSpreadIndex+1, visibleRect: visibleRect, spreadFrames: spreadFrames) > changeOnPercentageVisible {
+                    if visibleRect.origin.x > dragStartVisibleRect.origin.x && VersoView.calc_spreadVisibilityPercentage(spreadIndex:targetSpreadIndex+1, visibleRect: visibleRect, spreadFrames: spreadFrames) > changeOnPercentageVisible {
                         targetSpreadIndex += 1
                     }
-                    else if visibleRect.origin.x < dragStartVisibleRect.origin.x &&  VersoView.calc_spreadVisibilityPercentage(targetSpreadIndex-1, visibleRect: visibleRect, spreadFrames: spreadFrames) > changeOnPercentageVisible {
+                    else if visibleRect.origin.x < dragStartVisibleRect.origin.x &&  VersoView.calc_spreadVisibilityPercentage(spreadIndex:targetSpreadIndex-1, visibleRect: visibleRect, spreadFrames: spreadFrames) > changeOnPercentageVisible {
                         targetSpreadIndex -= 1
                     }
                 }
@@ -1063,13 +1061,13 @@ extension VersoView : UIScrollViewDelegate {
             targetSpreadIndex = min(max(targetSpreadIndex, 0), config.spreadCount-1)
             
             // generate offset for the new target spread
-            targetContentOffset.memory = VersoView.calc_scrollOffsetForSpread(targetSpreadIndex, spreadFrames: spreadFrames, versoSize: versoSize)
+            targetContentOffset.pointee = VersoView.calc_scrollOffset(spreadIndex:targetSpreadIndex, spreadFrames: spreadFrames, versoSize: versoSize)
         }
     }
     
-    public func scrollViewDidEndDragging(scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+    public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         if scrollView == pageScrollView {
-            if !decelerate && !scrollView.zoomBouncing {
+            if !decelerate && !scrollView.isZoomBouncing {
                 _didFinishScrolling()
             }
         }
@@ -1079,23 +1077,23 @@ extension VersoView : UIScrollViewDelegate {
     
     
     // MARK: Zooming
-    public func scrollViewWillBeginZooming(scrollView: UIScrollView, withView view: UIView?) {
+    public func scrollViewWillBeginZooming(_ scrollView: UIScrollView, with view: UIView?) {
         if scrollView == zoomView {
             _didStartZooming()
         }
     }
-    public func scrollViewDidZoom(scrollView: UIScrollView) {
+    public func scrollViewDidZoom(_ scrollView: UIScrollView) {
         if scrollView == zoomView {
             
             _didZoom()
         }
     }
-    public func scrollViewDidEndZooming(scrollView: UIScrollView, withView view: UIView?, atScale scale: CGFloat) {
+    public func scrollViewDidEndZooming(_ scrollView: UIScrollView, with view: UIView?, atScale scale: CGFloat) {
         if scrollView == zoomView {
             _didEndZooming()
         }
     }
-    public func viewForZoomingInScrollView(scrollView: UIScrollView) -> UIView? {
+    public func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         if scrollView == zoomView {
             return zoomViewContents
         }
@@ -1115,20 +1113,20 @@ extension VersoView : UIScrollViewDelegate {
 extension VersoView {
     
     /// Calculate all the frames of all the spreads
-    private static func calc_spreadFrames(versoSize:CGSize, spreadConfig:VersoSpreadConfiguration) -> [CGRect] {
+    fileprivate static func calc_spreadFrames(versoSize:CGSize, spreadConfig:VersoSpreadConfiguration) -> [CGRect] {
         
         let spreadSpacing:CGFloat = spreadConfig.spreadSpacing
         
         // recalculate frames for all spreads
         var newSpreadFrames:[CGRect] = []
         
-        var prevSpreadFrame = CGRectZero
+        var prevSpreadFrame = CGRect.zero
         for properties in spreadConfig.spreadProperties {
             
-            var spreadFrame = CGRectZero
+            var spreadFrame = CGRect.zero
             spreadFrame.size.width = floor(versoSize.width * properties.widthPercentage)
             spreadFrame.size.height = versoSize.height
-            spreadFrame.origin.x = CGRectGetMaxX(prevSpreadFrame) + spreadSpacing
+            spreadFrame.origin.x = prevSpreadFrame.maxX + spreadSpacing
             
             newSpreadFrames.append(spreadFrame)
             
@@ -1138,16 +1136,16 @@ extension VersoView {
     }
     
     /// Calculate all the frames of all the pages
-    private static func calc_pageFrames(spreadFrames:[CGRect], spreadConfig:VersoSpreadConfiguration) -> [CGRect] {
+    fileprivate static func calc_pageFrames(spreadFrames:[CGRect], spreadConfig:VersoSpreadConfiguration) -> [CGRect] {
         
         var pageFrames:[CGRect] = []
         
-        for (spreadIndex, spreadFrame) in spreadFrames.enumerate() {
+        for (spreadIndex, spreadFrame) in spreadFrames.enumerated() {
             
-            let spreadType = spreadConfig.spreadTypeForSpreadIndex(spreadIndex)
+            let spreadType = spreadConfig.spreadType(forSpreadIndex:spreadIndex)
             
             switch spreadType {
-            case .Double(_,_):
+            case .double(_,_):
                 var versoPageFrame = spreadFrame
                 versoPageFrame.size.width /= 2
                 
@@ -1157,7 +1155,7 @@ extension VersoView {
                 pageFrames.append(versoPageFrame)
                 pageFrames.append(rectoPageFrame)
                 
-            case .Single(_):
+            case .single(_):
                 pageFrames.append(spreadFrame)
             default:
                 break
@@ -1169,19 +1167,19 @@ extension VersoView {
     
     
     /// Calculate the size of all the spreads
-    private static func calc_contentSize(spreadFrames:[CGRect]) -> CGSize {
-        var size = CGSizeZero
+    fileprivate static func calc_contentSize(spreadFrames:[CGRect]) -> CGSize {
+        var size = CGSize.zero
         if let lastFrame = spreadFrames.last {
-            size.width = CGRectGetMaxX(lastFrame)
+            size.width = lastFrame.maxX
             size.height = lastFrame.size.height
         }
         return size
     }
     
     /// Calculate the scroll position of a specific spread
-    private static func calc_scrollOffsetForSpread(spreadIndex:Int, spreadFrames:[CGRect], versoSize:CGSize) -> CGPoint {
+    fileprivate static func calc_scrollOffset(spreadIndex:Int, spreadFrames:[CGRect], versoSize:CGSize) -> CGPoint {
         
-        var offset = CGPointZero
+        var offset = CGPoint.zero
         
         if let spreadFrame = spreadFrames[verso_safe:spreadIndex] {
             
@@ -1200,10 +1198,10 @@ extension VersoView {
     }
     
     /// Calculate the visibility % of a specific spread within a certain rect
-    private static func calc_spreadVisibilityPercentage(spreadIndex:Int, visibleRect:CGRect, spreadFrames:[CGRect]) -> CGFloat {
+    fileprivate static func calc_spreadVisibilityPercentage(spreadIndex:Int, visibleRect:CGRect, spreadFrames:[CGRect]) -> CGFloat {
         
-        if let spreadFrame = spreadFrames[verso_safe:spreadIndex] where spreadFrame.width > 0 {
-            let spreadIntersection = spreadFrame.intersect(visibleRect)
+        if let spreadFrame = spreadFrames[verso_safe:spreadIndex] , spreadFrame.width > 0 {
+            let spreadIntersection = spreadFrame.intersection(visibleRect)
             
             if spreadIntersection.isEmpty == false {
                 return spreadIntersection.width / spreadFrame.width
@@ -1214,20 +1212,20 @@ extension VersoView {
     }
     
     /// Calculate which pages are visible within a certain rect. Called frequently.
-    private static func calc_visiblePageIndexesInRect(visibleRect:CGRect, pageFrames:[CGRect], fullyVisible:Bool) -> NSIndexSet {
+    fileprivate static func calc_visiblePageIndexes(in visibleRect:CGRect, pageFrames:[CGRect], fullyVisible:Bool) -> IndexSet {
     
         // TODO: optimize?
         
         let visiblePageIndexes = NSMutableIndexSet()
-        for (pageIndex, pageFrame) in pageFrames.enumerate() {
+        for (pageIndex, pageFrame) in pageFrames.enumerated() {
             
             if (fullyVisible && visibleRect.contains(pageFrame)) ||
                 (!fullyVisible && visibleRect.intersects(pageFrame)){
-                visiblePageIndexes.addIndex(pageIndex)
+                visiblePageIndexes.add(pageIndex)
             }
         }
         
-        return visiblePageIndexes
+        return visiblePageIndexes as IndexSet
     }
     
 }
@@ -1244,33 +1242,33 @@ extension VersoView {
         
         /// This is the frame we wish the contentsView to occupy. contentInset is adjusted to maintain that frame.
         /// If this is nil the contents will be centered
-        var targetContentFrame:CGRect? { didSet {
-            _updateZoomContentInsets()
+        var targetContentFrame:CGRect? {
+            didSet {
+                _updateZoomContentInsets()
             }
         }
-        
-        override func layoutSublayersOfLayer(layer: CALayer) {
-            super.layoutSublayersOfLayer(layer)
+        override func layoutSublayers(of layer: CALayer) {
+            super.layoutSublayers(of: layer)
             
             _updateZoomContentInsets()
         }
         
-        private func _updateZoomContentInsets() {
+        fileprivate func _updateZoomContentInsets() {
             
-            if let contentView = delegate?.viewForZoomingInScrollView?(self) {
+            if let contentView = delegate?.viewForZooming?(in: self) {
                 self.contentInset = _targetedInsets(contentView)
             }
         }
         
-        private func _targetedInsets(contentView:UIView) -> UIEdgeInsets {
+        fileprivate func _targetedInsets(_ contentView:UIView) -> UIEdgeInsets {
             
-            var edgeInset = UIEdgeInsetsZero
+            var edgeInset = UIEdgeInsets.zero
             
             // the goal frame of the contentsView when not zoomed in
-            let unscaledTargetFrame = self.targetContentFrame ?? CGRect(origin:CGPointMake(CGRectGetMidX(bounds)-(contentView.bounds.size.width/2), CGRectGetMidY(bounds)-(contentView.bounds.size.height/2)), size:contentView.bounds.size)
+            let unscaledTargetFrame = self.targetContentFrame ?? CGRect(origin:CGPoint(x: bounds.midX-(contentView.bounds.size.width/2), y: bounds.midY-(contentView.bounds.size.height/2)), size:contentView.bounds.size)
             
             // calc what percentage of non-contents space the origin distance is
-            var percentageOfRemainingSpace = CGPointZero
+            var percentageOfRemainingSpace = CGPoint.zero
             percentageOfRemainingSpace.x = bounds.size.width != unscaledTargetFrame.size.width ? unscaledTargetFrame.origin.x/(bounds.size.width-unscaledTargetFrame.size.width) : 1
             percentageOfRemainingSpace.y = bounds.size.height != unscaledTargetFrame.size.height ? unscaledTargetFrame.origin.y/(bounds.size.height-unscaledTargetFrame.size.height) : 1
             
@@ -1321,7 +1319,7 @@ extension VersoView {
     
     
     // MARK: Equatable
-    override public func isEqual(object: AnyObject?) -> Bool {
+    override public func isEqual(_ object: Any?) -> Bool {
         if let object = object as? VersoSpreadProperty {
             if maxZoomScale != object.maxZoomScale || widthPercentage != object.widthPercentage {
                 return false
@@ -1343,9 +1341,9 @@ extension VersoView {
 @objc public class VersoSpreadConfiguration : NSObject {
     public let spreadProperties:[VersoSpreadProperty]
     
-    public private(set) var pageCount:Int = 0
-    public private(set) var spreadCount:Int = 0
-    public private(set) var spreadSpacing:CGFloat = 0
+    public fileprivate(set) var pageCount:Int = 0
+    public fileprivate(set) var spreadCount:Int = 0
+    public fileprivate(set) var spreadSpacing:CGFloat = 0
     
     public init(_ spreadProperties:[VersoSpreadProperty], spreadSpacing:CGFloat = 0) {
         self.spreadProperties = spreadProperties
@@ -1354,7 +1352,7 @@ extension VersoView {
         
         // calculate pageCount
         var newPageCount = 0
-        for (_, properties) in spreadProperties.enumerate() {
+        for (_, properties) in spreadProperties.enumerated() {
             newPageCount += properties.pageIndexes.count
         }
         self.pageCount = newPageCount
@@ -1363,8 +1361,8 @@ extension VersoView {
     }
     
     
-    func spreadIndexForPageIndex(pageIndex:Int) -> Int? {
-        for (spreadIndex, properties) in self.spreadProperties.enumerate() {
+    func spreadIndex(forPageIndex pageIndex:Int) -> Int? {
+        for (spreadIndex, properties) in self.spreadProperties.enumerated() {
             if properties.pageIndexes.contains(pageIndex) {
                 return spreadIndex
             }
@@ -1372,23 +1370,23 @@ extension VersoView {
         return nil
     }
     
-    func pageIndexesForSpreadIndex(spreadIndex:Int) -> NSIndexSet {
+    func pageIndexes(forSpreadIndex spreadIndex:Int) -> IndexSet {
         let pageIndexes = NSMutableIndexSet()
         
         if let properties = spreadProperties[verso_safe:spreadIndex] {
             for pageIndex in properties.pageIndexes {
-                pageIndexes.addIndex(pageIndex)
+                pageIndexes.add(pageIndex)
             }
         }
-        return pageIndexes
+        return pageIndexes as IndexSet
     }
 
-    func spreadPropertyForSpreadIndex(spreadIndex:Int) -> VersoSpreadProperty? {
+    func spreadProperty(forSpreadIndex spreadIndex:Int) -> VersoSpreadProperty? {
         return spreadProperties[verso_safe:spreadIndex]
     }
-    func spreadPropertyForPageIndex(pageIndex:Int) -> VersoSpreadProperty? {
-        if let spreadIndex = spreadIndexForPageIndex(pageIndex) {
-            return spreadPropertyForSpreadIndex(spreadIndex)
+    func spreadProperty(forPageIndex pageIndex:Int) -> VersoSpreadProperty? {
+        if let spreadIndex = spreadIndex(forPageIndex: pageIndex) {
+            return spreadProperty(forSpreadIndex:spreadIndex)
         }
         return nil
     }
@@ -1396,12 +1394,12 @@ extension VersoView {
     
     
     // MARK: Equatable
-    override public func isEqual(object: AnyObject?) -> Bool {
+    override public func isEqual(_ object: Any?) -> Bool {
         if let object = object as? VersoSpreadConfiguration {
             if pageCount != object.pageCount || spreadCount != object.spreadCount {
                 return false
             }
-            return (spreadProperties as NSArray).isEqualToArray(object.spreadProperties)
+            return (spreadProperties as NSArray).isEqual(to: object.spreadProperties)
         } else {
             return false
         }
@@ -1422,24 +1420,24 @@ extension VersoView {
 extension VersoSpreadProperty {
     
     enum SpreadType {
-        case None
-        case Single(pageIndex:Int)
-        case Double(versoIndex:Int, rectoIndex:Int)
+        case none
+        case single(pageIndex:Int)
+        case double(versoIndex:Int, rectoIndex:Int)
         
         
         // get a set of all the page indexes
-        func allPageIndexes() -> NSIndexSet {
+        func allPageIndexes() -> IndexSet {
             
             let pageIndexes = NSMutableIndexSet()
             switch self {
-            case let .Single(pageIndex):
-                pageIndexes.addIndex(pageIndex)
-            case let .Double(verso, recto):
-                pageIndexes.addIndex(verso)
-                pageIndexes.addIndex(recto)
+            case let .single(pageIndex):
+                pageIndexes.add(pageIndex)
+            case let .double(verso, recto):
+                pageIndexes.add(verso)
+                pageIndexes.add(recto)
             default:break
             }
-            return pageIndexes
+            return pageIndexes as IndexSet
         }
     }
     
@@ -1447,13 +1445,13 @@ extension VersoSpreadProperty {
     func getSpreadType() -> SpreadType {
         
         if pageIndexes.count == 1 {
-            return .Single(pageIndex: pageIndexes[0])
+            return .single(pageIndex: pageIndexes[0])
         }
         else if pageIndexes.count == 2 {
-            return .Double(versoIndex: pageIndexes[0], rectoIndex: pageIndexes[1])
+            return .double(versoIndex: pageIndexes[0], rectoIndex: pageIndexes[1])
         }
         else {
-            return .None
+            return .none
         }
     }
 }
@@ -1461,13 +1459,13 @@ extension VersoSpreadProperty {
 extension VersoSpreadProperty.SpreadType: Equatable { }
 func ==(lhs: VersoSpreadProperty.SpreadType, rhs: VersoSpreadProperty.SpreadType) -> Bool {
     switch (lhs, rhs) {
-    case (let .Single(pageIndex1), let .Single(pageIndex2)):
+    case (let .single(pageIndex1), let .single(pageIndex2)):
         return pageIndex1 == pageIndex2
         
-    case (let .Double(verso1, recto1), let .Double(verso2, recto2)):
+    case (let .double(verso1, recto1), let .double(verso2, recto2)):
         return verso1 == verso2 && recto1 == recto2
         
-    case (.None, .None):
+    case (.none, .none):
         return true
         
     default:
@@ -1476,8 +1474,8 @@ func ==(lhs: VersoSpreadProperty.SpreadType, rhs: VersoSpreadProperty.SpreadType
 }
 
 extension VersoSpreadConfiguration {
-    func spreadTypeForSpreadIndex(spreadIndex:Int) -> VersoSpreadProperty.SpreadType {
-        return spreadPropertyForSpreadIndex(spreadIndex)?.getSpreadType() ?? .None
+    func spreadType(forSpreadIndex spreadIndex:Int) -> VersoSpreadProperty.SpreadType {
+        return spreadProperty(forSpreadIndex:spreadIndex)?.getSpreadType() ?? .none
     }
 }
 
@@ -1489,26 +1487,26 @@ extension VersoSpreadConfiguration {
 
 extension VersoSpreadProperty {
     enum SpreadPageAlignment {
-        case Center
-        case Left
-        case Right
+        case center
+        case left
+        case right
     }
     
-    func pageAlignmentForPage(pageIndex:Int) -> SpreadPageAlignment {
+    func pageAlignment(forPageIndex pageIndex:Int) -> SpreadPageAlignment {
         
         guard pageIndexes.contains(pageIndex) else {
-            return .Center
+            return .center
         }
         
         let type = getSpreadType()
             
         switch type {
-        case let .Double(versoIndex, _) where versoIndex == pageIndex:
-            return .Right
-        case let .Double(_, rectoIndex) where rectoIndex == pageIndex:
-            return .Left
+        case let .double(versoIndex, _) where versoIndex == pageIndex:
+            return .right
+        case let .double(_, rectoIndex) where rectoIndex == pageIndex:
+            return .left
         default:
-            return .Center
+            return .center
         }
     }
     
@@ -1516,11 +1514,11 @@ extension VersoSpreadProperty {
 
 extension VersoSpreadConfiguration {
     
-    func pageAlignmentForPage(pageIndex:Int) -> VersoSpreadProperty.SpreadPageAlignment {
-        if let properties = spreadPropertyForPageIndex(pageIndex) {
-            return properties.pageAlignmentForPage(pageIndex)
+    func pageAlignment(forPageIndex pageIndex:Int) -> VersoSpreadProperty.SpreadPageAlignment {
+        if let properties = spreadProperty(forPageIndex:pageIndex) {
+            return properties.pageAlignment(forPageIndex:pageIndex)
         }
-        return .Center
+        return .center
     }
 }
 
@@ -1536,7 +1534,7 @@ extension VersoSpreadConfiguration {
 extension VersoSpreadConfiguration {
     
     /// This is a utility configuration builder that helps you construct a SpreadConfiguration.
-    public static func buildPageSpreadConfiguration(pageCount:Int, spreadSpacing:CGFloat, spreadPropertyConstructor:((spreadIndex:Int, nextPageIndex:Int)->(spreadPageCount:Int, maxZoomScale:CGFloat, widthPercentage:CGFloat))? = nil) -> VersoSpreadConfiguration {
+    public static func buildPageSpreadConfiguration(pageCount:Int, spreadSpacing:CGFloat, spreadPropertyConstructor:((_ spreadIndex:Int, _ nextPageIndex:Int)->(spreadPageCount:Int, maxZoomScale:CGFloat, widthPercentage:CGFloat))? = nil) -> VersoSpreadConfiguration {
         
         var spreadProperties:[VersoSpreadProperty] = []
         
@@ -1545,7 +1543,7 @@ extension VersoSpreadConfiguration {
         var spreadIndex = 0
         while nextPageIndex < pageCount {
             
-            let constructorResults = spreadPropertyConstructor?(spreadIndex:spreadIndex, nextPageIndex:nextPageIndex) ?? (spreadPageCount:1, maxZoomScale:4.0, widthPercentage:1.0)
+            let constructorResults = spreadPropertyConstructor?(spreadIndex, nextPageIndex) ?? (spreadPageCount:1, maxZoomScale:4.0, widthPercentage:1.0)
 
             
             let lastSpreadPageIndex = min(nextPageIndex + max(constructorResults.spreadPageCount,1) - 1, pageCount - 1)
@@ -1574,6 +1572,26 @@ extension VersoSpreadConfiguration {
 // MARK: - Double-Tappable ScrollView
 
 import ObjectiveC
+fileprivate func < <T : Comparable>(lhs: T?, rhs: T?) -> Bool {
+  switch (lhs, rhs) {
+  case let (l?, r?):
+    return l < r
+  case (nil, _?):
+    return true
+  default:
+    return false
+  }
+}
+
+fileprivate func > <T : Comparable>(lhs: T?, rhs: T?) -> Bool {
+  switch (lhs, rhs) {
+  case let (l?, r?):
+    return l > r
+  default:
+    return rhs < lhs
+  }
+}
+
 
 private var doubleTapGestureAssociationKey: UInt8 = 0
 private var doubleTapAnimatedAssociationKey: UInt8 = 0
@@ -1581,7 +1599,7 @@ private var doubleTapAnimatedAssociationKey: UInt8 = 0
 extension UIScrollView {
     /// The double-tap gesture that performs the zoom
     /// This is nil until `sgn_enableDoubleTapGestures` is called
-    public private(set) var sgn_doubleTapGesture:UITapGestureRecognizer? {
+    public fileprivate(set) var sgn_doubleTapGesture:UITapGestureRecognizer? {
         get {
             return objc_getAssociatedObject(self, &doubleTapGestureAssociationKey) as? UITapGestureRecognizer
         }
@@ -1610,7 +1628,7 @@ extension UIScrollView {
         }
 
         addGestureRecognizer(doubleTap!)
-        doubleTap!.enabled = true
+        doubleTap!.isEnabled = true
     }
     
     /// This will remove and nil-out the double-tap gesture.
@@ -1628,13 +1646,13 @@ extension UIScrollView {
     
     
     @objc
-    private func _sgn_didDoubleTap(tap:UITapGestureRecognizer) {
-        guard tap.state == .Ended else {
+    fileprivate func _sgn_didDoubleTap(_ tap:UITapGestureRecognizer) {
+        guard tap.state == .ended else {
             return
         }
         
         // no-op if zoom is disabled
-        guard pinchGestureRecognizer != nil && pinchGestureRecognizer!.enabled == true else {
+        guard pinchGestureRecognizer != nil && pinchGestureRecognizer!.isEnabled == true else {
             return
         }
         
@@ -1643,12 +1661,12 @@ extension UIScrollView {
             return
         }
         
-        guard let zoomedView = delegate?.viewForZoomingInScrollView?(self) else {
+        guard let zoomedView = delegate?.viewForZooming?(in: self) else {
             return
         }
         
         // fake 'willBegin'
-        delegate?.scrollViewWillBeginZooming?(self, withView:zoomedView)
+        delegate?.scrollViewWillBeginZooming?(self, with:zoomedView)
 
         let zoomedIn = zoomScale > minimumZoomScale
         
@@ -1661,17 +1679,17 @@ extension UIScrollView {
             else {
                 // zoomed out - find the rect we want to zoom to
                 let targetScale = self.maximumZoomScale
-                let targetCenter = tap.locationInView(zoomedView)
+                let targetCenter = tap.location(in: zoomedView)
                     //zoomedView.convertPoint(tap.locationInView(self), fromView: self)
                 
-                var targetZoomRect = CGRectZero
+                var targetZoomRect = CGRect.zero
                 targetZoomRect.size = CGSize(width: zoomedView.frame.size.width / targetScale,
                                              height: zoomedView.frame.size.height / targetScale)
                 
                 targetZoomRect.origin = CGPoint(x: targetCenter.x - ((targetZoomRect.size.width / 2.0)),
                                                 y: targetCenter.y - ((targetZoomRect.size.height / 2.0)))
                 
-                self.zoomToRect(targetZoomRect, animated: false)
+                self.zoom(to: targetZoomRect, animated: false)
             }
 
         }
@@ -1680,16 +1698,16 @@ extension UIScrollView {
         let animated = sgn_doubleTapZoomAnimated
         
         // here we use a custom animation to make zooming faster/nicer
-        let duration:NSTimeInterval = zoomedIn ? 0.50 : 0.60;
+        let duration:TimeInterval = zoomedIn ? 0.50 : 0.60;
         let damping:CGFloat = zoomedIn ? 0.9 : 0.8;
         let initialVelocity:CGFloat = zoomedIn ? 0.9 : 0.8;
 
     
-        UIView.animateWithDuration(animated ? duration : 0, delay: 0, usingSpringWithDamping: damping, initialSpringVelocity: initialVelocity, options: [.BeginFromCurrentState], animations: zoomAnimations) { [weak self] finished in
+        UIView.animate(withDuration: animated ? duration : 0, delay: 0, usingSpringWithDamping: damping, initialSpringVelocity: initialVelocity, options: [.beginFromCurrentState], animations: zoomAnimations) { [weak self] finished in
             
             if self != nil && finished {
                 // fake 'didZoom'
-                self!.delegate?.scrollViewDidEndZooming?(self!, withView:zoomedView, atScale:self!.zoomScale)
+                self!.delegate?.scrollViewDidEndZooming?(self!, with:zoomedView, atScale:self!.zoomScale)
             }
         }
     }
@@ -1697,10 +1715,10 @@ extension UIScrollView {
 
 
 
-private extension CollectionType {
+private extension Collection {
     /// Returns the element at the specified index if it is within bounds, otherwise nil.
-    subscript (verso_safe index: Index) -> Generator.Element? {
-        return indices.contains(index) ? self[index] : nil
+    subscript (verso_safe index: Index) -> Iterator.Element? {
+        return index >= startIndex && index < endIndex ? self[index] : nil
     }
 }
 

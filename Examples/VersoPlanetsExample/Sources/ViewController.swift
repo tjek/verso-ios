@@ -20,7 +20,7 @@ class ViewController: UIViewController {
         verso.delegate = self
         
         verso.frame = self.view.bounds
-        verso.autoresizingMask = [.FlexibleWidth, .FlexibleHeight]
+        verso.autoresizingMask = [.flexibleWidth, .flexibleHeight]
 
         return verso
     }()
@@ -49,9 +49,9 @@ class ViewController: UIViewController {
 class PlanetPageView : VersoPageView {
     lazy var nameLabel:UILabel = {
         let lbl = UILabel()
-        lbl.font = UIFont.boldSystemFontOfSize(30)
+        lbl.font = UIFont.boldSystemFont(ofSize: 30)
         lbl.adjustsFontSizeToFitWidth = true
-        lbl.textColor = UIColor.whiteColor()
+        lbl.textColor = UIColor.white
         return lbl
     }()
     
@@ -60,7 +60,7 @@ class PlanetPageView : VersoPageView {
         
         addSubview(nameLabel)
         
-        backgroundColor = UIColor.blackColor()
+        backgroundColor = UIColor.black
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -83,11 +83,11 @@ extension ViewController : VersoViewDataSource {
     
     /// This method is called whenever VersoView is about to relayout. 
     /// It gives you a chance to define the configuration of all the spreads.
-    func spreadConfigurationForVerso(verso:VersoView, size:CGSize) -> VersoSpreadConfiguration {
+    func spreadConfiguration(verso:VersoView, size:CGSize) -> VersoSpreadConfiguration {
         
         let isLandscape:Bool = size.width > size.height
         
-        return VersoSpreadConfiguration.buildPageSpreadConfiguration(planetData.count, spreadSpacing: 20, spreadPropertyConstructor: { (spreadIndex, nextPageIndex) -> (spreadPageCount: Int, maxZoomScale: CGFloat, widthPercentage: CGFloat) in
+        return VersoSpreadConfiguration.buildPageSpreadConfiguration(pageCount:planetData.count, spreadSpacing: 20, spreadPropertyConstructor: { (spreadIndex, nextPageIndex) -> (spreadPageCount: Int, maxZoomScale: CGFloat, widthPercentage: CGFloat) in
             
             let isFirstPage = nextPageIndex == 0
 
@@ -102,7 +102,7 @@ extension ViewController : VersoViewDataSource {
     /// Gives the dataSource a chance to configure the pageView.
     /// This must not take a long time, as it is called during scrolling.
     /// The pageView's `pageIndex` property will have been set, but its size will not be correct
-    func configurePageForVerso(verso:VersoView, pageView:VersoPageView) {
+    func configurePage(verso:VersoView, pageView:VersoPageView) {
         
         guard let planetPage = pageView as? PlanetPageView else {
             return
@@ -115,7 +115,7 @@ extension ViewController : VersoViewDataSource {
     
     
     /// What subclass of VersoPageView should be used.
-    func pageViewClassForVerso(verso:VersoView, pageIndex:Int) -> VersoPageViewClass {
+    func pageViewClass(verso:VersoView, pageIndex:Int) -> VersoPageViewClass {
         return PlanetPageView.self
     }
     
