@@ -240,6 +240,7 @@ public class VersoView : UIView {
             self?.spreadConfiguration = nil
             
             self?.setNeedsLayout()
+            self?.layoutIfNeeded()
         }
     }
     
@@ -1408,9 +1409,22 @@ extension VersoView {
     override public var hash: Int {
         return (spreadProperties as NSArray).hashValue
     }
+    
+    
+    override public var description: String {
+        
+        var propertyStr:String = ""
+        for property in spreadProperties {
+            propertyStr += "["
+            for pageIndex in property.pageIndexes {
+                propertyStr += "[\(pageIndex)]"
+            }
+            propertyStr += "]"
+        }
+        
+        return "<VersoSpreadConfiguration \(pageCount) pages, \(spreadCount) spreads \(propertyStr)>"
+    }
 }
-
-
 
 
 
