@@ -13,10 +13,11 @@ import UIKit
 // MARK: - Delegate
 
 public protocol VersoViewDelegate : class {
-    
-    /// This is triggered whenever the centered pages change, but only once any scrolling or re-layout animation finishes.
+    /// This is triggered whenever the centered pages change.
     func currentPageIndexesChanged(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet)
-    /// This is triggered whenever the visible pages change, whilst the user is scrolling, or after a relayout. This will be called before `currentPageIndexesChanged` callback is triggered.
+    /// This is triggered whenever the centered pages change, but only once any scrolling or re-layout animation finishes.
+    func currentPageIndexesFinishedChanging(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet)
+    /// This is triggered whenever the visible pages change, whilst the user is scrolling, or after a relayout. This will be called before `currentPageIndexesFinishedChanging` callback is triggered.
     func visiblePageIndexesChanged(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet)
     
     /// The user started zooming in/out of the spread containing the specified pages. ZoomScale is the how zoomed in we are when zooming started.
@@ -30,6 +31,7 @@ public protocol VersoViewDelegate : class {
 /// Default implementation of delegate does nothing. This makes the delegate methods optional.
 public extension VersoViewDelegate {
     func currentPageIndexesChanged(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet) {}
+    func currentPageIndexesFinishedChanging(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet) {}
     func visiblePageIndexesChanged(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet) {}
     func didStartZoomingPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat) {}
     func didZoomPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat) {}
@@ -652,7 +654,21 @@ public class VersoView : UIView {
         
         centeredSpreadIndex = newCenteredSpreadIndex
         
-        centeredSpreadPageIndexes = centeredSpreadIndex != nil ? config.pageIndexes(forSpreadIndex:centeredSpreadIndex!) : IndexSet()
+        
+        let newCenteredSpreadPageIndexes:IndexSet = centeredSpreadIndex != nil ? config.pageIndexes(forSpreadIndex:centeredSpreadIndex!) : IndexSet()
+        
+        guard newCenteredSpreadPageIndexes != centeredSpreadPageIndexes else {
+            return
+        }
+        
+        // calc diff
+        let addedIndexes = newCenteredSpreadPageIndexes.subtracting(centeredSpreadPageIndexes)
+        let removedIndexes = centeredSpreadPageIndexes.subtracting(newCenteredSpreadPageIndexes)
+        
+        centeredSpreadPageIndexes = newCenteredSpreadPageIndexes
+        
+        // notify delegate of changes to current page
+        delegate?.currentPageIndexesChanged(verso:self, pageIndexes: centeredSpreadPageIndexes, added: addedIndexes, removed: removedIndexes)
     }
     
     
@@ -686,7 +702,7 @@ public class VersoView : UIView {
         currentPageIndexes = newCurrentPageIndexes
         
         // notify delegate of changes to current page
-        delegate?.currentPageIndexesChanged(verso:self, pageIndexes: currentPageIndexes, added: addedIndexes, removed: removedIndexes)
+        delegate?.currentPageIndexesFinishedChanging(verso:self, pageIndexes: currentPageIndexes, added: addedIndexes, removed: removedIndexes)
     }
     
     
