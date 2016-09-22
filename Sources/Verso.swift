@@ -153,37 +153,7 @@ public class VersoView : UIView {
         
         super.layoutSubviews()
         
-        
-        let newVersoSize = bounds.size
-        var newSpreadConfig = spreadConfiguration
-        
-        
-        // get a new spread configuration
-        if spreadConfiguration == nil || versoSize != newVersoSize {
-            newSpreadConfig = dataSource?.spreadConfiguration(verso:self, size: newVersoSize)
-        }
-        
-        let willRelayout = versoSize != newVersoSize || spreadConfiguration != newSpreadConfig
-        
-        
-        if willRelayout {
-            // move pageViews out of zoomView (without side-effects)
-            UIView.performWithoutAnimation { [weak self] in
-                self?._resetZoomView()
-            }
-        }
-        
-        
-        pageScrollView.frame = bounds
-        versoSize = newVersoSize
-        spreadConfiguration = newSpreadConfig
-        
-        // there was a change in size or configuration ... relayout
-        if willRelayout {
-            // recalc all layout states, and update spreads
-            _updateSpreadPositions()
-            
-        }
+        _regenerateSpreadLayout(targetPageIndex: centeredSpreadPageIndexes.first ?? 0)
     }
     
     override public func didMoveToSuperview() {
@@ -225,9 +195,11 @@ public class VersoView : UIView {
     
     
     /// This triggers a refetch of info from the dataSource, and all the pageViews are re-configured.
-    public func reloadPages() {
+    public func reloadPages(targetPageIndex:Int? = nil) {
         DispatchQueue.main.async { [weak self] in
             guard self != nil else { return }
+            
+            let actualTargetPageIndex = targetPageIndex ?? self?.centeredSpreadPageIndexes.first ?? 0
             
             for (_, pageView) in self!.pageViewsByPageIndex {
                 pageView.removeFromSuperview()
@@ -238,13 +210,15 @@ public class VersoView : UIView {
             self?.currentPageIndexes = IndexSet()
             self?.centeredSpreadIndex = nil
             self?.visiblePageIndexes = IndexSet()
+            self?.centeredSpreadIndex = nil
+            self?.centeredSpreadPageIndexes = IndexSet()
             
             self?.spreadConfiguration = nil
             
-            self?.setNeedsLayout()
-            self?.layoutIfNeeded()
+            self?._regenerateSpreadLayout(targetPageIndex: actualTargetPageIndex)
         }
     }
+    
     
     /// Scrolls the VersoView to point to a specific page. This is a no-op if the page doesnt exist.
     public func jump(toPageIndex:Int, animated:Bool) {
@@ -334,19 +308,47 @@ public class VersoView : UIView {
     // MARK: - Spread & PageView Layout
     
     /**
-        Re-calc all the spread frames.
-        Then recalculates the contentSize & offset of the pageScrollView.
-        Finally re-position all the pageViews
+     Re-calc all the spread frames.
+     Then recalculates the contentSize & offset of the pageScrollView.
+     Finally re-position all the pageViews
      */
-    fileprivate func _updateSpreadPositions() {
+    fileprivate func _regenerateSpreadLayout(targetPageIndex:Int) {
+        
+        let newVersoSize = bounds.size
+        var newSpreadConfig = spreadConfiguration
+        
+        
+        // get a new spread configuration
+        if spreadConfiguration == nil || versoSize != newVersoSize {
+            newSpreadConfig = dataSource?.spreadConfiguration(verso:self, size: newVersoSize)
+        }
+        
+        let willRelayout = versoSize != newVersoSize || spreadConfiguration != newSpreadConfig
+        
+        
+        if willRelayout {
+            // move pageViews out of zoomView (without side-effects)
+            UIView.performWithoutAnimation { [weak self] in
+                self?._resetZoomView()
+            }
+        }
+        
+        
+        pageScrollView.frame = bounds
+        versoSize = newVersoSize
+        spreadConfiguration = newSpreadConfig
+        
+        
+        // there was a change in size or configuration ... 
+        // recalc all layout states, and update spreads
+        guard willRelayout == true else {
+            return
+        }
+        
         guard let config = spreadConfiguration else {
             assert(spreadConfiguration != nil, "You must provide a VersoSpreadConfiguration")
             return
         }
-        
-        
-        // figure out which page we should scroll to
-        let targetPageIndex = centeredSpreadPageIndexes.first ?? 0
         
         
         CATransaction.begin() // start a transaction, so we get a completion handler
@@ -655,8 +657,7 @@ public class VersoView : UIView {
         centeredSpreadIndex = newCenteredSpreadIndex
         
         
-        let newCenteredSpreadPageIndexes:IndexSet = centeredSpreadIndex != nil ? config.pageIndexes(forSpreadIndex:centeredSpreadIndex!) : IndexSet()
-        
+        let newCenteredSpreadPageIndexes = centeredSpreadIndex != nil ? config.pageIndexes(forSpreadIndex:centeredSpreadIndex!) : IndexSet()
         guard newCenteredSpreadPageIndexes != centeredSpreadPageIndexes else {
             return
         }
