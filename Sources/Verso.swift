@@ -228,8 +228,14 @@ public class VersoView : UIView {
                 return
             }
             
-            if let spreadIndex = self?.spreadConfiguration?.spreadIndex(forPageIndex:toPageIndex) {
+            let clampedIndex = max(min((self?.spreadConfiguration?.pageCount ?? 0) - 1, toPageIndex), 0)
+            
+            if let spreadIndex = self?.spreadConfiguration?.spreadIndex(forPageIndex:clampedIndex) {
                 self?.pageScrollView.setContentOffset(VersoView.calc_scrollOffset(spreadIndex: spreadIndex, spreadFrames:self!.spreadFrames, versoSize: self!.versoSize), animated: animated)
+                
+                if !animated {
+                    self?._didFinishScrolling()
+                }
             }
         }
     }
