@@ -1,0 +1,24 @@
+//
+//  _____ _           _____
+// |   __| |_ ___ ___|   __|_ _ ___
+// |__   |   | . | . |  |  | | |   |
+// |_____|_|_|___|  _|_____|___|_|_|
+//               |_|
+//
+//  Copyright (c) 2016 ShopGun. All rights reserved.
+
+
+#include "Shared/Platform/iOS.xcconfig"
+#include "Shared/Product/Application.xcconfig"
+
+PRODUCT_NAME = VersoPlanetsExample
+PRODUCT_BUNDLE_IDENTIFIER = com.shopgun.ios.verso.planets-example
+
+CODE_SIGN_IDENTITY = iPhone Developer
+
+SWIFT_VERSION = 3.0
+
+IPHONEOS_DEPLOYMENT_TARGET = 8.0
+
+INFOPLIST_FILE = $(SRCROOT)/Resources/Info.plist
+ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME =

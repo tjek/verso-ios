@@ -7,16 +7,30 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AE4CC97D1DB0E0F50087819C /* Verso.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AED8AA5A1D89489000C92ED5 /* Verso.framework */; };
+		AE4CC97E1DB0E0F50087819C /* Verso.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AED8AA5A1D89489000C92ED5 /* Verso.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		AED8AA1E1D89463000C92ED5 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AED8AA1C1D89463000C92ED5 /* AppDelegate.swift */; };
 		AED8AA1F1D89463000C92ED5 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AED8AA1D1D89463000C92ED5 /* ViewController.swift */; };
 		AED8AA271D89463D00C92ED5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AED8AA211D89463D00C92ED5 /* Assets.xcassets */; };
 		AED8AA281D89463D00C92ED5 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AED8AA221D89463D00C92ED5 /* LaunchScreen.storyboard */; };
 		AED8AA291D89463D00C92ED5 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AED8AA241D89463D00C92ED5 /* Main.storyboard */; };
-		AED8AA5E1D894A3C00C92ED5 /* Verso.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AED8AA5A1D89489000C92ED5 /* Verso.framework */; };
-		AED8AA5F1D894A3C00C92ED5 /* Verso.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AED8AA5A1D89489000C92ED5 /* Verso.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		AE4CC97B1DB0E0E20087819C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AED8AA551D89489000C92ED5 /* Verso.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = AED8AA341D89472A00C92ED5;
+			remoteInfo = Verso;
+		};
+		AE4CC97F1DB0E0F50087819C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AED8AA551D89489000C92ED5 /* Verso.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = AED8AA341D89472A00C92ED5;
+			remoteInfo = Verso;
+		};
 		AED8AA591D89489000C92ED5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = AED8AA551D89489000C92ED5 /* Verso.xcodeproj */;
@@ -24,30 +38,16 @@
 			remoteGlobalIDString = AED8AA351D89472A00C92ED5;
 			remoteInfo = Verso;
 		};
-		AED8AA5C1D894A2600C92ED5 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = AED8AA551D89489000C92ED5 /* Verso.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = AED8AA341D89472A00C92ED5;
-			remoteInfo = Verso;
-		};
-		AED8AA601D894A3C00C92ED5 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = AED8AA551D89489000C92ED5 /* Verso.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = AED8AA341D89472A00C92ED5;
-			remoteInfo = Verso;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		AED8AA621D894A3D00C92ED5 /* Embed Frameworks */ = {
+		AE4CC9811DB0E0F50087819C /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				AED8AA5F1D894A3C00C92ED5 /* Verso.framework in Embed Frameworks */,
+				AE4CC97E1DB0E0F50087819C /* Verso.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -55,6 +55,19 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AE4CC9521DB0DD7F0087819C /* Common.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
+		AE4CC9541DB0DD7F0087819C /* iOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = iOS.xcconfig; sourceTree = "<group>"; };
+		AE4CC9551DB0DD7F0087819C /* macOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = macOS.xcconfig; sourceTree = "<group>"; };
+		AE4CC9561DB0DD7F0087819C /* tvOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = tvOS.xcconfig; sourceTree = "<group>"; };
+		AE4CC9571DB0DD7F0087819C /* watchOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = watchOS.xcconfig; sourceTree = "<group>"; };
+		AE4CC9591DB0DD7F0087819C /* Application.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Application.xcconfig; sourceTree = "<group>"; };
+		AE4CC95A1DB0DD7F0087819C /* DynamicFramework.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = DynamicFramework.xcconfig; sourceTree = "<group>"; };
+		AE4CC95B1DB0DD7F0087819C /* LogicTests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LogicTests.xcconfig; sourceTree = "<group>"; };
+		AE4CC95C1DB0DD7F0087819C /* StaticFramework.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = StaticFramework.xcconfig; sourceTree = "<group>"; };
+		AE4CC95E1DB0DD7F0087819C /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		AE4CC95F1DB0DD7F0087819C /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		AE4CC9601DB0DD7F0087819C /* Warnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Warnings.xcconfig; sourceTree = "<group>"; };
+		AE4CC9611DB0DD7F0087819C /* VersoPlanetsExample.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = VersoPlanetsExample.xcconfig; sourceTree = "<group>"; };
 		AED8AA061D8943F200C92ED5 /* VersoPlanetsExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VersoPlanetsExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AED8AA1C1D89463000C92ED5 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		AED8AA1D1D89463000C92ED5 /* ViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -70,18 +83,71 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AED8AA5E1D894A3C00C92ED5 /* Verso.framework in Frameworks */,
+				AE4CC97D1DB0E0F50087819C /* Verso.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		AE4CC9501DB0DD7F0087819C /* Configurations */ = {
+			isa = PBXGroup;
+			children = (
+				AE4CC9611DB0DD7F0087819C /* VersoPlanetsExample.xcconfig */,
+				AE4CC9511DB0DD7F0087819C /* Shared */,
+			);
+			path = Configurations;
+			sourceTree = "<group>";
+		};
+		AE4CC9511DB0DD7F0087819C /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				AE4CC9521DB0DD7F0087819C /* Common.xcconfig */,
+				AE4CC9531DB0DD7F0087819C /* Platform */,
+				AE4CC9581DB0DD7F0087819C /* Product */,
+				AE4CC95D1DB0DD7F0087819C /* Project */,
+				AE4CC9601DB0DD7F0087819C /* Warnings.xcconfig */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		AE4CC9531DB0DD7F0087819C /* Platform */ = {
+			isa = PBXGroup;
+			children = (
+				AE4CC9541DB0DD7F0087819C /* iOS.xcconfig */,
+				AE4CC9551DB0DD7F0087819C /* macOS.xcconfig */,
+				AE4CC9561DB0DD7F0087819C /* tvOS.xcconfig */,
+				AE4CC9571DB0DD7F0087819C /* watchOS.xcconfig */,
+			);
+			path = Platform;
+			sourceTree = "<group>";
+		};
+		AE4CC9581DB0DD7F0087819C /* Product */ = {
+			isa = PBXGroup;
+			children = (
+				AE4CC9591DB0DD7F0087819C /* Application.xcconfig */,
+				AE4CC95A1DB0DD7F0087819C /* DynamicFramework.xcconfig */,
+				AE4CC95B1DB0DD7F0087819C /* LogicTests.xcconfig */,
+				AE4CC95C1DB0DD7F0087819C /* StaticFramework.xcconfig */,
+			);
+			path = Product;
+			sourceTree = "<group>";
+		};
+		AE4CC95D1DB0DD7F0087819C /* Project */ = {
+			isa = PBXGroup;
+			children = (
+				AE4CC95E1DB0DD7F0087819C /* Debug.xcconfig */,
+				AE4CC95F1DB0DD7F0087819C /* Release.xcconfig */,
+			);
+			path = Project;
+			sourceTree = "<group>";
+		};
 		AED8A9FD1D8943F200C92ED5 = {
 			isa = PBXGroup;
 			children = (
 				AED8AA1B1D89463000C92ED5 /* Sources */,
 				AED8AA201D89463D00C92ED5 /* Resources */,
+				AE4CC9501DB0DD7F0087819C /* Configurations */,
 				AED8AA541D89485A00C92ED5 /* Frameworks */,
 				AED8AA071D8943F200C92ED5 /* Products */,
 			);
@@ -141,13 +207,13 @@
 				AED8AA021D8943F200C92ED5 /* Sources */,
 				AED8AA031D8943F200C92ED5 /* Frameworks */,
 				AED8AA041D8943F200C92ED5 /* Resources */,
-				AED8AA621D894A3D00C92ED5 /* Embed Frameworks */,
+				AE4CC9811DB0E0F50087819C /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				AED8AA5D1D894A2600C92ED5 /* PBXTargetDependency */,
-				AED8AA611D894A3C00C92ED5 /* PBXTargetDependency */,
+				AE4CC97C1DB0E0E20087819C /* PBXTargetDependency */,
+				AE4CC9801DB0E0F50087819C /* PBXTargetDependency */,
 			);
 			name = VersoPlanetsExample;
 			productName = VersoPlanetsExample;
@@ -166,7 +232,9 @@
 				TargetAttributes = {
 					AED8AA051D8943F200C92ED5 = {
 						CreatedOnToolsVersion = 7.3.1;
+						DevelopmentTeam = MN86AVA6GX;
 						LastSwiftMigration = 0800;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -230,15 +298,15 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		AED8AA5D1D894A2600C92ED5 /* PBXTargetDependency */ = {
+		AE4CC97C1DB0E0E20087819C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = Verso;
-			targetProxy = AED8AA5C1D894A2600C92ED5 /* PBXContainerItemProxy */;
+			targetProxy = AE4CC97B1DB0E0E20087819C /* PBXContainerItemProxy */;
 		};
-		AED8AA611D894A3C00C92ED5 /* PBXTargetDependency */ = {
+		AE4CC9801DB0E0F50087819C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = Verso;
-			targetProxy = AED8AA601D894A3C00C92ED5 /* PBXContainerItemProxy */;
+			targetProxy = AE4CC97F1DB0E0F50087819C /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -264,119 +332,33 @@
 /* Begin XCBuildConfiguration section */
 		AED8AA161D8943F200C92ED5 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AE4CC95E1DB0DD7F0087819C /* Debug.xcconfig */;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
-				MTL_ENABLE_DEBUG_INFO = YES;
-				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = iphoneos;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
 		AED8AA171D8943F200C92ED5 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AE4CC95F1DB0DD7F0087819C /* Release.xcconfig */;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				SDKROOT = iphoneos;
-				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
 		AED8AA191D8943F200C92ED5 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AE4CC9611DB0DD7F0087819C /* VersoPlanetsExample.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				INFOPLIST_FILE = "$(SRCROOT)/Resources/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.shopgun.ios.verso.planets-example";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
 		};
 		AED8AA1A1D8943F200C92ED5 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AE4CC9611DB0DD7F0087819C /* VersoPlanetsExample.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				INFOPLIST_FILE = "$(SRCROOT)/Resources/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.shopgun.ios.verso.planets-example";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 3.0;
 			};
 			name = Release;
 		};
