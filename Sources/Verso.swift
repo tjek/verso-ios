@@ -189,6 +189,9 @@ public class VersoView : UIView {
     public fileprivate(set) var spreadConfiguration:VersoSpreadConfiguration?
     
     
+    public var panGestureRecognizer:UIPanGestureRecognizer {
+        return pageScrollView.panGestureRecognizer
+    }
     public var zoomDoubleTapGestureRecognizer:UITapGestureRecognizer? {
         return zoomView.sgn_doubleTapGesture
     }
