@@ -1309,9 +1309,11 @@ extension VersoView {
             
             if bounds.size.height > scaledTargetFrame.size.height {
                 edgeInset.top = scaledTargetFrame.origin.y + (bounds.origin.y - contentOffset.y)
+                edgeInset.bottom = edgeInset.top
             }
             if bounds.size.width > scaledTargetFrame.size.width {
                 edgeInset.left = scaledTargetFrame.origin.x + (bounds.origin.x - contentOffset.x)
+                edgeInset.right = edgeInset.left
             }
             
             return edgeInset
@@ -1739,9 +1741,9 @@ extension UIScrollView {
         let animated = sgn_doubleTapZoomAnimated
         
         // here we use a custom animation to make zooming faster/nicer
-        let duration:TimeInterval = zoomedIn ? 0.50 : 0.60;
-        let damping:CGFloat = zoomedIn ? 0.9 : 0.8;
-        let initialVelocity:CGFloat = zoomedIn ? 0.9 : 0.8;
+        let duration:TimeInterval = zoomedIn ? 0.30 : 0.40
+        let damping:CGFloat = zoomedIn ? 0.9 : 0.8
+        let initialVelocity:CGFloat = zoomedIn ? 0.9 : 0.75
 
     
         UIView.animate(withDuration: animated ? duration : 0, delay: 0, usingSpringWithDamping: damping, initialSpringVelocity: initialVelocity, options: [.beginFromCurrentState], animations: zoomAnimations) { [weak self] finished in
