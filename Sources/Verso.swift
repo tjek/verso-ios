@@ -1148,17 +1148,17 @@ extension VersoView {
         // recalculate frames for all spreads
         var newSpreadFrames:[CGRect] = []
         
-        var prevSpreadFrame = CGRect.zero
+        var nextOriginX:CGFloat = 0
         for properties in spreadConfig.spreadProperties {
             
             var spreadFrame = CGRect.zero
             spreadFrame.size.width = floor(versoSize.width * properties.widthPercentage)
             spreadFrame.size.height = versoSize.height
-            spreadFrame.origin.x = prevSpreadFrame.maxX + spreadSpacing
+            spreadFrame.origin.x = nextOriginX
             
             newSpreadFrames.append(spreadFrame)
             
-            prevSpreadFrame = spreadFrame
+            nextOriginX = spreadFrame.maxX + spreadSpacing
         }
         return newSpreadFrames
     }
