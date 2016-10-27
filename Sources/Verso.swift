@@ -959,7 +959,6 @@ public class VersoView : UIView {
         let view = UIScrollView(frame:self.frame)
         view.delegate = self
         view.decelerationRate = UIScrollViewDecelerationRateFast
-        view.delaysContentTouches = false
         
         return view
     }()
@@ -1112,7 +1111,8 @@ extension VersoView : UIScrollViewDelegate {
     }
     public func scrollViewDidZoom(_ scrollView: UIScrollView) {
         if scrollView == zoomView {
-            
+            zoomView.updateZoomContentInsets()
+
             _didZoom()
         }
     }
@@ -1272,19 +1272,23 @@ extension VersoView {
         /// If this is nil the contents will be centered
         var targetContentFrame:CGRect? {
             didSet {
-                _updateZoomContentInsets()
+                updateZoomContentInsets()
             }
         }
         override func layoutSublayers(of layer: CALayer) {
             super.layoutSublayers(of: layer)
-            
-            _updateZoomContentInsets()
+            updateZoomContentInsets()
         }
         
-        fileprivate func _updateZoomContentInsets() {
+        /// You MUST call this func in the scrollView delegate's `didZoom` callback
+        public func updateZoomContentInsets() {
             
             if let contentView = delegate?.viewForZooming?(in: self) {
-                self.contentInset = _targetedInsets(contentView)
+                
+                let newInset = _targetedInsets(contentView)
+                if UIEdgeInsetsEqualToEdgeInsets(newInset, self.contentInset) == false {
+                    self.contentInset = newInset
+                }
             }
         }
         
@@ -1309,15 +1313,31 @@ extension VersoView {
             
             if bounds.size.height > scaledTargetFrame.size.height {
                 edgeInset.top = scaledTargetFrame.origin.y + (bounds.origin.y - contentOffset.y)
-                edgeInset.bottom = edgeInset.top
             }
             if bounds.size.width > scaledTargetFrame.size.width {
                 edgeInset.left = scaledTargetFrame.origin.x + (bounds.origin.x - contentOffset.x)
-                edgeInset.right = edgeInset.left
             }
             
             return edgeInset
         }
+        
+        
+//        /// This is an older, simpler version of the inset-getter that doesnt take into account the `targetContentFrame`
+//        fileprivate func legacyCenteredInsets(_ contentView:UIView) -> UIEdgeInsets {
+//            
+//            var edgeInsets = UIEdgeInsets.zero
+//            
+//            if (bounds.size.height > contentView.frame.size.height)
+//            {
+//                edgeInsets.top = (bounds.midY - contentOffset.y) - contentView.frame.midY
+//            }
+//            if (bounds.size.width > contentView.frame.size.width)
+//            {
+//                edgeInsets.left = (bounds.midX - contentOffset.x) - contentView.frame.midX
+//            }
+//            
+//            return edgeInsets
+//        }
     }
 }
 
