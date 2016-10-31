@@ -14,28 +14,28 @@ import UIKit
 
 public protocol VersoViewDelegate : class {
     /// This is triggered whenever the centered pages change.
-    func currentPageIndexesChanged(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet)
-    /// This is triggered whenever the centered pages change, but only once any scrolling or re-layout animation finishes.
-    func currentPageIndexesFinishedChanging(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet)
+    func currentPageIndexesChanged(current currentPageIndexes:IndexSet, previous oldPageIndexes:IndexSet, in verso:VersoView)
+    /// This is triggered whenever the centered pages change, but only once any scrolling or re-layout animation finishes. This will be triggered even if current & previous are the same.
+    func currentPageIndexesFinishedChanging(current currentPageIndexes:IndexSet, previous oldPageIndexes:IndexSet, in verso:VersoView)
     /// This is triggered whenever the visible pages change, whilst the user is scrolling, or after a relayout. This will be called before `currentPageIndexesFinishedChanging` callback is triggered.
-    func visiblePageIndexesChanged(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet)
+    func visiblePageIndexesChanged(current currentPageIndexes:IndexSet, previous oldPageIndexes:IndexSet, in verso:VersoView)
     
     /// The user started zooming in/out of the spread containing the specified pages. ZoomScale is the how zoomed in we are when zooming started.
-    func didStartZoomingPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat)
+    func didStartZooming(pages pageIndexes:IndexSet, zoomScale:CGFloat, in verso:VersoView)
     /// ZoomScale changed - the user is in the process of zooming in/out of the spread containing the specified pages.
-    func didZoomPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat)
+    func didZoom(pages pageIndexes:IndexSet, zoomScale:CGFloat, in verso:VersoView)
     /// The user finished zooming in/out of the spread containing the specified pages. ZoomScale is the how zoomed in we are when zooming finishes.
-    func didEndZoomingPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat)
+    func didEndZooming(pages pageIndexes:IndexSet, zoomScale:CGFloat, in verso:VersoView)
 }
 
 /// Default implementation of delegate does nothing. This makes the delegate methods optional.
 public extension VersoViewDelegate {
-    func currentPageIndexesChanged(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet) {}
-    func currentPageIndexesFinishedChanging(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet) {}
-    func visiblePageIndexesChanged(verso:VersoView, pageIndexes:IndexSet, added:IndexSet, removed:IndexSet) {}
-    func didStartZoomingPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat) {}
-    func didZoomPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat) {}
-    func didEndZoomingPages(verso:VersoView, zoomingPageIndexes:IndexSet, zoomScale:CGFloat) {}
+    func currentPageIndexesChanged(current currentPageIndexes:IndexSet, previous oldPageIndexes:IndexSet, in verso:VersoView) {}
+    func currentPageIndexesFinishedChanging(current currentPageIndexes:IndexSet, previous oldPageIndexes:IndexSet, in verso:VersoView) {}
+    func visiblePageIndexesChanged(current currentPageIndexes:IndexSet, previous oldPageIndexes:IndexSet, in verso:VersoView) {}
+    func didStartZooming(pages pageIndexes:IndexSet, zoomScale:CGFloat, in verso:VersoView) {}
+    func didZoom(pages pageIndexes:IndexSet, zoomScale:CGFloat, in verso:VersoView) {}
+    func didEndZooming(pages pageIndexes:IndexSet, zoomScale:CGFloat, in verso:VersoView) {}
 }
 
 
@@ -188,6 +188,9 @@ public class VersoView : UIView {
     /// The spreadConfiguration provided by the dataSource
     public fileprivate(set) var spreadConfiguration:VersoSpreadConfiguration?
     
+    public var zoomScale:CGFloat {
+        return zoomView.zoomScale
+    }
     
     public var panGestureRecognizer:UIPanGestureRecognizer {
         return pageScrollView.panGestureRecognizer
@@ -367,12 +370,13 @@ public class VersoView : UIView {
         
         // when the layout is complete, move the active page views into the zoomview
         CATransaction.setCompletionBlock { [weak self] in
+            guard let s = self else { return }
             
-            self?.pageScrollView.isScrollEnabled = true
+            s.pageScrollView.isScrollEnabled = true
             
-            self?._enableZoomingForCurrentPageViews(force: true)
+            s._enableZoomingForCurrentPageViews(force: true)
             
-            self?.performingLayout = false
+            s.performingLayout = false
             
         }
         
@@ -666,19 +670,23 @@ public class VersoView : UIView {
         centeredSpreadIndex = newCenteredSpreadIndex
         
         
-        let newCenteredSpreadPageIndexes = centeredSpreadIndex != nil ? config.pageIndexes(forSpreadIndex:centeredSpreadIndex!) : IndexSet()
-        guard newCenteredSpreadPageIndexes != centeredSpreadPageIndexes else {
+        // update centeredSpreadPageIndexes
+        let oldPageIndexes = centeredSpreadPageIndexes
+        centeredSpreadPageIndexes = centeredSpreadIndex != nil ? config.pageIndexes(forSpreadIndex:centeredSpreadIndex!) : IndexSet()
+        
+        
+        // only notify for first empty pageIndexes set
+        guard (centeredSpreadPageIndexes.count == 0 && centeredSpreadPageIndexes == oldPageIndexes) == false else {
             return
         }
+
         
-        // calc diff
-        let addedIndexes = newCenteredSpreadPageIndexes.subtracting(centeredSpreadPageIndexes)
-        let removedIndexes = centeredSpreadPageIndexes.subtracting(newCenteredSpreadPageIndexes)
-        
-        centeredSpreadPageIndexes = newCenteredSpreadPageIndexes
-        
-        // notify delegate of changes to current page
-        delegate?.currentPageIndexesChanged(verso:self, pageIndexes: centeredSpreadPageIndexes, added: addedIndexes, removed: removedIndexes)
+        let newPageIndexes = centeredSpreadPageIndexes
+        DispatchQueue.main.async { [weak self] in
+            guard let s = self else { return }
+            // notify delegate of changes to current page
+            s.delegate?.currentPageIndexesChanged(current:newPageIndexes, previous:oldPageIndexes, in:s)
+        }
     }
     
     
@@ -698,21 +706,21 @@ public class VersoView : UIView {
         
         
         // update currentPageIndexes
-        let newCurrentPageIndexes = currentSpreadIndex != nil ? config.pageIndexes(forSpreadIndex: currentSpreadIndex!) : IndexSet()
+        let oldPageIndexes = currentPageIndexes
+        currentPageIndexes = currentSpreadIndex != nil ? config.pageIndexes(forSpreadIndex: currentSpreadIndex!) : IndexSet()
         
-        guard newCurrentPageIndexes != currentPageIndexes else {
+        
+        // only notify for first empty pageIndexes set
+        guard (currentPageIndexes.count == 0 && currentPageIndexes == oldPageIndexes) == false else {
             return
         }
         
-        
-        // calc diff
-        let addedIndexes = newCurrentPageIndexes.subtracting(currentPageIndexes)
-        let removedIndexes = currentPageIndexes.subtracting(newCurrentPageIndexes)
-        
-        currentPageIndexes = newCurrentPageIndexes
-        
-        // notify delegate of changes to current page
-        delegate?.currentPageIndexesFinishedChanging(verso:self, pageIndexes: currentPageIndexes, added: addedIndexes, removed: removedIndexes)
+        let newPageIndexes = currentPageIndexes
+        DispatchQueue.main.async { [weak self] in
+            guard let s = self else { return }
+            // notify delegate of changes to current page
+            s.delegate?.currentPageIndexesFinishedChanging(current:newPageIndexes, previous:oldPageIndexes, in:s)
+        }
     }
     
     
@@ -721,20 +729,21 @@ public class VersoView : UIView {
         
         let visibleFrame = pageScrollView.bounds
         
-        let newVisiblePageIndexes = VersoView.calc_visiblePageIndexes(in: visibleFrame, pageFrames: pageFrames, fullyVisible: false)
+        let oldPageIndexes = visiblePageIndexes
+        visiblePageIndexes = VersoView.calc_visiblePageIndexes(in: visibleFrame, pageFrames: pageFrames, fullyVisible: false)
 
-        guard newVisiblePageIndexes != visiblePageIndexes else {
+        
+        // only notify for first empty pageIndexes set
+        guard (visiblePageIndexes.count == 0 && visiblePageIndexes == oldPageIndexes) == false else {
             return
         }
-        
-        // calc diff
-        let addedIndexes = newVisiblePageIndexes.subtracting(visiblePageIndexes)
-        let removedIndexes = visiblePageIndexes.subtracting(newVisiblePageIndexes)
-        
-        visiblePageIndexes = newVisiblePageIndexes
-        
-        // notify delegate of changes to current page
-        delegate?.visiblePageIndexesChanged(verso:self, pageIndexes: visiblePageIndexes, added: addedIndexes, removed: removedIndexes)
+
+        let newPageIndexes = visiblePageIndexes
+        DispatchQueue.main.async { [weak self] in
+            guard let s = self else { return }
+            // notify delegate of changes to current page
+            s.delegate?.visiblePageIndexesChanged(current:newPageIndexes, previous:oldPageIndexes, in:s)
+        }
 
     }
     
@@ -908,7 +917,12 @@ public class VersoView : UIView {
     
     fileprivate func _didStartZooming() {
         if zoomingPageIndexes.count > 0 {
-            delegate?.didStartZoomingPages(verso:self, zoomingPageIndexes: zoomingPageIndexes, zoomScale: zoomView.zoomScale)
+            let pageIndexes = zoomingPageIndexes
+            let zoomScale = zoomView.zoomScale
+            DispatchQueue.main.async { [weak self] in
+                guard let s = self else { return }
+                s.delegate?.didStartZooming(pages:pageIndexes, zoomScale: zoomScale, in:s)
+            }
             
             zoomTargetBackgroundColor = dataSourceOptional.zoomBackgroundColor(verso:self, zoomingPageIndexes:zoomingPageIndexes)
         }
@@ -931,7 +945,12 @@ public class VersoView : UIView {
         zoomView.backgroundColor = zoomTargetBackgroundColor!.withAlphaComponent(targetAlpha)
         
         if zoomingPageIndexes.count > 0 {
-            delegate?.didZoomPages(verso:self, zoomingPageIndexes: zoomingPageIndexes, zoomScale: zoomView.zoomScale)
+            let pageIndexes = zoomingPageIndexes
+            let zoomScale = zoomView.zoomScale
+            DispatchQueue.main.async { [weak self] in
+                guard let s = self else { return }
+                s.delegate?.didZoom(pages:pageIndexes, zoomScale: zoomScale, in:s)
+            }
         }
     }
     
@@ -945,7 +964,12 @@ public class VersoView : UIView {
         
         
         if zoomingPageIndexes.count > 0 {
-            delegate?.didEndZoomingPages(verso:self, zoomingPageIndexes: zoomingPageIndexes, zoomScale: zoomView.zoomScale)
+            let pageIndexes = zoomingPageIndexes
+            let zoomScale = zoomView.zoomScale
+            DispatchQueue.main.async { [weak self] in
+                guard let s = self else { return }
+                s.delegate?.didEndZooming(pages:pageIndexes, zoomScale: zoomScale, in:s)
+            }
         }
     }
     
