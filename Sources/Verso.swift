@@ -46,58 +46,58 @@ public extension VersoViewDelegate {
 public protocol VersoViewDataSource : VersoViewDataSourceOptional {
     
     /// The SpreadConfiguration that defines the page count, and layout of the pages, within this verso.
-    func spreadConfiguration(verso:VersoView, size:CGSize) -> VersoSpreadConfiguration
+    func spreadConfiguration(with size:CGSize, for verso:VersoView) -> VersoSpreadConfiguration
     
     /// Gives the dataSource a chance to configure the pageView. 
     /// This must not take a long time, as it is called during scrolling.
     /// The pageView's `pageIndex` property will have been set, but its size will not be correct
-    func configurePage(verso:VersoView, pageView:VersoPageView)
+    func configure(pageView:VersoPageView, for verso:VersoView)
     
     
     /// What subclass of VersoPageView should be used.
-    func pageViewClass(verso:VersoView, pageIndex:Int) -> VersoPageViewClass
+    func pageViewClass(on pageIndex:Int, for verso:VersoView) -> VersoPageViewClass
     
 }
 
 public protocol VersoViewDataSourceOptional : class {
     /// How many pages before the currently visible pageIndexes to preload. 
     /// Ignored if `preloadPageIndexesForVerso` does not return nil.
-    func previousPageCountToPreload(verso:VersoView, visiblePageIndexes:IndexSet) -> Int
+    func pageCountToPreload(before visiblePageIndexes:IndexSet, for verso:VersoView) -> Int
     
     /// How many pages after the currently visible pageIndexes to preload.
     /// Ignored if `preloadPageIndexesForVerso` does not return nil.
-    func nextPageCountToPreload(verso:VersoView, visiblePageIndexes:IndexSet) -> Int
+    func pageCountToPreload(after visiblePageIndexes:IndexSet, for verso:VersoView) -> Int
     
     /// Gives you a chance to modify the page indexes to preload around the visible page indexes.
     /// This is for more advanced customization of the preloading indexes.
     /// The `preloadPageIndexes` property is based on the prev/nextPageCount dataSource results.
     /// If nil (default), set that is passed as `preloadPageIndexes` will be used unmodified
-    func adjustPreloadPageIndexes(verso:VersoView, visiblePageIndexes:IndexSet, preloadPageIndexes:IndexSet) -> IndexSet?
+    func adjustPreloadPageIndexes(_ preloadPageIndexes:IndexSet, visiblePageIndexes:IndexSet, for verso:VersoView) -> IndexSet?
     
     /// What color should the background fade to when zooming.
-    func zoomBackgroundColor(verso:VersoView, zoomingPageIndexes:IndexSet) -> UIColor
+    func zoomBackgroundColor(whenZooming pageIndexes:IndexSet, for verso:VersoView) -> UIColor
     
     /// Return a view to overlay over the currently visible pages. 
     /// This is called every time the layout changes, or the user finishes scrolling.
-    func spreadOverlayView(verso:VersoView, overlaySize:CGSize, pageFrames:[Int:CGRect]) -> UIView?
+    func spreadOverlayView(overlaySize:CGSize, pageFrames:[Int:CGRect], for verso:VersoView) -> UIView?
 }
 
 /// Default Values for Optional DataSource
 public extension VersoViewDataSourceOptional {
     
-    func previousPageCountToPreload(verso:VersoView, visiblePageIndexes:IndexSet) -> Int {
+    func pageCountToPreload(before visiblePageIndexes:IndexSet, for verso:VersoView) -> Int {
         return 2
     }
-    func nextPageCountToPreload(verso:VersoView, visiblePageIndexes:IndexSet) -> Int {
+    func pageCountToPreload(after visiblePageIndexes:IndexSet, for verso:VersoView) -> Int {
         return 6
     }
-    func adjustPreloadPageIndexes(verso:VersoView, visiblePageIndexes:IndexSet, preloadPageIndexes:IndexSet) -> IndexSet? {
+    func adjustPreloadPageIndexes(_ preloadPageIndexes:IndexSet, visiblePageIndexes:IndexSet, for verso:VersoView) -> IndexSet? {
         return nil
     }
-    func zoomBackgroundColor(verso:VersoView, zoomingPageIndexes:IndexSet) -> UIColor {
+    func zoomBackgroundColor(whenZooming pageIndexes:IndexSet, for verso:VersoView) -> UIColor {
         return UIColor(white: 0, alpha: 0.7)
     }
-    func spreadOverlayView(verso:VersoView, overlaySize:CGSize, pageFrames:[Int:CGRect]) -> UIView? {
+    func spreadOverlayView(overlaySize:CGSize, pageFrames:[Int:CGRect], for verso:VersoView) -> UIView? {
         return nil
     }
 }
@@ -332,7 +332,7 @@ public class VersoView : UIView {
         
         // get a new spread configuration
         if spreadConfiguration == nil || versoSize != newVersoSize {
-            newSpreadConfig = dataSource?.spreadConfiguration(verso:self, size: newVersoSize)
+            newSpreadConfig = dataSource?.spreadConfiguration(with:newVersoSize, for:self)
         }
         
         let willRelayout = versoSize != newVersoSize || spreadConfiguration != newSpreadConfig
@@ -472,7 +472,7 @@ public class VersoView : UIView {
                 var pageView:VersoPageView? = nil
                 
                 // get the class of the page at that index
-                let pageViewClass:VersoPageViewClass = dataSource?.pageViewClass(verso:self, pageIndex: pageIndex) ?? VersoPageView.self
+                let pageViewClass:VersoPageViewClass = dataSource?.pageViewClass(on:pageIndex, for:self) ?? VersoPageView.self
                 
                 // try to find a pageView of the correct type from the recycle bin
                 if let recycleIndex = recyclablePageViews.index(where: { (recyclablePageView:VersoPageView) -> Bool in
@@ -546,15 +546,15 @@ public class VersoView : UIView {
         // get all the page indexes we are going to config and position, based on delegate callbacks
         var preloadPageIndexes = pageIndexes
         
-        let beforeCount = dataSourceOptional.previousPageCountToPreload(verso:self, visiblePageIndexes: pageIndexes)
-        let afterCount = dataSourceOptional.nextPageCountToPreload(verso:self, visiblePageIndexes: pageIndexes)
+        let beforeCount = dataSourceOptional.pageCountToPreload(before:pageIndexes, for:self)
+        let afterCount = dataSourceOptional.pageCountToPreload(after:pageIndexes, for:self)
         
         let newFirstIndex = max(pageIndexes.first!-beforeCount, 0)
         let newLastIndex = min(pageIndexes.last!+afterCount, config.pageCount-1)
         
         preloadPageIndexes.insert(integersIn:newFirstIndex...newLastIndex)
         
-        if let adjustedPreloadIndexes = dataSourceOptional.adjustPreloadPageIndexes(verso:self, visiblePageIndexes: pageIndexes, preloadPageIndexes: preloadPageIndexes) {
+        if let adjustedPreloadIndexes = dataSourceOptional.adjustPreloadPageIndexes(preloadPageIndexes, visiblePageIndexes:pageIndexes, for:self) {
             preloadPageIndexes = adjustedPreloadIndexes
         }
         
@@ -571,7 +571,8 @@ public class VersoView : UIView {
     /// Asks the datasource to configure its pageview (done from preparePageView
     fileprivate func _configure(pageView:VersoPageView) {
         if pageView.pageIndex != NSNotFound {
-            dataSource?.configurePage(verso:self, pageView: pageView)
+            
+            dataSource?.configure(pageView:pageView, for:self)
         }
     }
     
@@ -791,7 +792,7 @@ public class VersoView : UIView {
             }
         }
 
-        let newSpreadOverlayView = spreadPageFrames.count > 0 ? dataSourceOptional.spreadOverlayView(verso:self, overlaySize:zoomViewContents.bounds.size, pageFrames:spreadPageFrames) : nil
+        let newSpreadOverlayView = spreadPageFrames.count > 0 ? dataSourceOptional.spreadOverlayView(overlaySize:zoomViewContents.bounds.size, pageFrames:spreadPageFrames, for:self) : nil
         
         if newSpreadOverlayView != spreadOverlayView {
             spreadOverlayView?.removeFromSuperview()
@@ -924,7 +925,7 @@ public class VersoView : UIView {
                 s.delegate?.didStartZooming(pages:pageIndexes, zoomScale: zoomScale, in:s)
             }
             
-            zoomTargetBackgroundColor = dataSourceOptional.zoomBackgroundColor(verso:self, zoomingPageIndexes:zoomingPageIndexes)
+            zoomTargetBackgroundColor = dataSourceOptional.zoomBackgroundColor(whenZooming:zoomingPageIndexes, for:self)
         }
     }
     
@@ -933,7 +934,7 @@ public class VersoView : UIView {
         // fade in the zoomView's background as we zoom
         
         if zoomTargetBackgroundColor == nil {
-            zoomTargetBackgroundColor = dataSourceOptional.zoomBackgroundColor(verso:self, zoomingPageIndexes:zoomingPageIndexes)
+            zoomTargetBackgroundColor = dataSourceOptional.zoomBackgroundColor(whenZooming:zoomingPageIndexes, for:self)
         }
         
         var maxAlpha:CGFloat = 1.0
