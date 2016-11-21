@@ -437,8 +437,6 @@ public class VersoView : UIView {
     
     /// This handles the creation/re-use and configuration of pageViews. This is triggered whilst the user scrolls.
     fileprivate func _preparePageViews() {
-
-        let visibleFrame = pageScrollView.bounds
         
         // generate/config any extra pageviews that we might need
         // these will be added/positioned in the pagingScrollView
@@ -513,23 +511,7 @@ public class VersoView : UIView {
             pageView.transform = CGAffineTransform.identity
             pageView.frame = _resizedFrame(pageView:pageView)
             pageView.alpha = 1
-            
-            
-            // find out how far the pageView is from the visible pages
-            var indexDist = 0
-            if pageView.pageIndex > visiblePageIndexes.last {
-                indexDist = pageView.pageIndex - visiblePageIndexes.last!
-            } else if pageView.pageIndex < visiblePageIndexes.first {
-                indexDist = pageView.pageIndex - visiblePageIndexes.first!
-            }
-            
-            // style the non-visible pages
-            if indexDist != 0 {
-                pageView.alpha = 0
-                pageView.transform = CGAffineTransform(translationX: visibleFrame.width/2 * CGFloat(indexDist), y: 0)
-            }
         }
-
         pageViewsByPageIndex = preparedPageViews
     }
     
@@ -765,6 +747,9 @@ public class VersoView : UIView {
         // dont do any post-scrolling layout if the user rotated the device while scroll-animations were being performed.
         if performingLayout == false {
             
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            
             _updateVisiblePageIndexes()
             
             _preparePageViews()
@@ -774,6 +759,8 @@ public class VersoView : UIView {
             _enableZoomingForCurrentPageViews(force: false)
             
             _updateMaxZoomScale()
+            
+            CATransaction.commit()
         }
     }
     
@@ -1008,7 +995,8 @@ public class VersoView : UIView {
         return view
     }()
     
-    
+    fileprivate var scrollingVelocity:CGPoint = .zero
+    fileprivate var scrollAnimIdentifier:Int = 0
 }
 
 
@@ -1024,11 +1012,16 @@ extension VersoView : UIScrollViewDelegate {
             
             // only update spreadIndex and pageViews during scroll when it was manually triggered
             if scrollView.isDragging == true || scrollView.isDecelerating == true || scrollView.isTracking == true {
+                
+                CATransaction.begin()
+                CATransaction.setDisableActions(true)
+                
                 _updateCenteredSpreadIndex()
                 _updateVisiblePageIndexes()
                 _preparePageViews()
+                
+                CATransaction.commit()
             }
-            
         }
     }
     
@@ -1036,30 +1029,16 @@ extension VersoView : UIScrollViewDelegate {
     // MARK: Animation
     public func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
         if scrollView == pageScrollView {
+            scrollingVelocity = .zero
             _didFinishScrolling()
         }
     }
     public func scrollViewWillBeginDecelerating(_ scrollView: UIScrollView) {
         if scrollView == pageScrollView {
-            // cancel any delayed didFinishScrolling requests - see `scrollViewDidEndDecelerating`
-            NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(VersoView._didFinishScrolling), object: nil)
+            finishDraggingByAnimatingToTarget(velocity: scrollingVelocity)
         }
     }
-    public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        if scrollView == pageScrollView {
-            
-            var delay:TimeInterval = 0
-            // There are some edge cases where, when dragging rapidly, we get a decel finished event, and then a bounce-back decel again
-            // In that case (where scrolled out of bounds and decel finished) wait before triggering didEndScrolling
-            // We delay rather than just not calling to make sure we dont end up in the situation where didEndScrolling is never called
-            if scrollView.bounces && (scrollView.bounds.maxX > scrollView.contentSize.width || scrollView.bounds.minX < 0 || scrollView.bounds.maxY > scrollView.contentSize.height || scrollView.bounds.minY < 0) {
-                delay = 0.2
-            }
-            NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(VersoView._didFinishScrolling), object: nil)
-            self.perform(#selector(VersoView._didFinishScrolling), with: nil, afterDelay: delay)
-        }
-    }
-    
+
     
     // MARK: Dragging
     
@@ -1070,6 +1049,9 @@ extension VersoView : UIScrollViewDelegate {
                 return
             }
             
+            scrollAnimIdentifier += 1
+            
+            scrollingVelocity = .zero
             // calculate the spreadIndex that was centered when  we started this drag
             dragStartSpreadIndex = centeredSpreadIndex ?? 0
             dragStartVisibleRect = scrollView.bounds
@@ -1078,51 +1060,92 @@ extension VersoView : UIScrollViewDelegate {
     }
     public func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
         if scrollView == pageScrollView {
-            guard let config = spreadConfiguration , config.spreadCount > 0 else {
-                return
-            }
+            scrollingVelocity = velocity
             
-            var targetSpreadIndex = centeredSpreadIndex ?? 0
-            
-            // spread hasnt changed, use velocity to inc/dec spread
-            if targetSpreadIndex == dragStartSpreadIndex {
-                if velocity.x > 0.5 {
-                    targetSpreadIndex += 1
-                }
-                else if velocity.x < -0.5 {
-                    targetSpreadIndex -= 1
-                }
-                else {
-                    // no velocity, so se if the next or prev spreads are a certain % visible
-                    let visibleRect = scrollView.bounds
-                    
-                    let changeOnPercentageVisible:CGFloat = 0.1                    
-                    
-                    if visibleRect.origin.x > dragStartVisibleRect.origin.x && VersoView.calc_spreadVisibilityPercentage(spreadIndex:targetSpreadIndex+1, visibleRect: visibleRect, spreadFrames: spreadFrames) > changeOnPercentageVisible {
-                        targetSpreadIndex += 1
-                    }
-                    else if visibleRect.origin.x < dragStartVisibleRect.origin.x &&  VersoView.calc_spreadVisibilityPercentage(spreadIndex:targetSpreadIndex-1, visibleRect: visibleRect, spreadFrames: spreadFrames) > changeOnPercentageVisible {
-                        targetSpreadIndex -= 1
-                    }
-                }
-            }
-            
-            
-            
-            // clamp targetSpread
-            targetSpreadIndex = min(max(targetSpreadIndex, 0), config.spreadCount-1)
-            
-            // generate offset for the new target spread
-            targetContentOffset.pointee = VersoView.calc_scrollOffset(spreadIndex:targetSpreadIndex, spreadFrames: spreadFrames, versoSize: versoSize)
         }
     }
     
     public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         if scrollView == pageScrollView {
+            
             if !decelerate && !scrollView.isZoomBouncing {
-                _didFinishScrolling()
+                finishDraggingByAnimatingToTarget(velocity: .zero)
             }
         }
+    }
+    
+    func finishDraggingByAnimatingToTarget(velocity:CGPoint) {
+        let s = self
+        let scrollView = s.pageScrollView
+        
+        if let finalContentOffset = s.calculateTargetContentOffset(visibleRect:scrollView.bounds, velocity: velocity) {
+            
+            let distance:CGFloat = abs(scrollView.contentOffset.x - finalContentOffset.x)
+            
+            
+            let defaultDuration = 0.5 // duration if there is no velocity
+            let maxDuration = 0.8
+            let minDuration = 0.3
+            // calculate the duration
+            let duration:TimeInterval = max(min(velocity.x != 0 ? TimeInterval(distance / (abs(velocity.x)*1000.0)) : defaultDuration, maxDuration), minDuration)
+            
+            let springVelocity:CGFloat = ((distance/CGFloat(duration)) / distance)
+            
+            
+            let currScrollId = s.scrollAnimIdentifier
+            
+            UIView.animate(withDuration: duration, delay: 0, usingSpringWithDamping:1, initialSpringVelocity:springVelocity, options: [.allowUserInteraction, .beginFromCurrentState], animations: {
+                
+                scrollView.setContentOffset(finalContentOffset, animated: false)
+                
+            }, completion: { [weak self] (finished) in
+                guard let s = self else { return }
+                if (finished && currScrollId == s.scrollAnimIdentifier) {
+                    s.scrollAnimIdentifier = 0
+                    s._didFinishScrolling()
+                }
+            })
+        }
+    }
+    
+    func calculateTargetContentOffset(visibleRect:CGRect, velocity:CGPoint) -> CGPoint? {
+        
+        guard let config = spreadConfiguration , config.spreadCount > 0 else {
+            return nil
+        }
+        
+        var targetSpreadIndex = centeredSpreadIndex ?? 0
+        
+        // spread hasnt changed, use velocity to inc/dec spread
+        if targetSpreadIndex == dragStartSpreadIndex {
+            if velocity.x > 0.5 {
+                targetSpreadIndex += 1
+            }
+            else if velocity.x < -0.5 {
+                targetSpreadIndex -= 1
+            }
+            else {
+                // no velocity, so se if the next or prev spreads are a certain % visible
+                //let visibleRect = scrollView.bounds
+                
+                let changeOnPercentageVisible:CGFloat = 0.1
+                
+                if visibleRect.origin.x > dragStartVisibleRect.origin.x && VersoView.calc_spreadVisibilityPercentage(spreadIndex:targetSpreadIndex+1, visibleRect: visibleRect, spreadFrames: spreadFrames) > changeOnPercentageVisible {
+                    targetSpreadIndex += 1
+                }
+                else if visibleRect.origin.x < dragStartVisibleRect.origin.x &&  VersoView.calc_spreadVisibilityPercentage(spreadIndex:targetSpreadIndex-1, visibleRect: visibleRect, spreadFrames: spreadFrames) > changeOnPercentageVisible {
+                    targetSpreadIndex -= 1
+                }
+            }
+        }
+        
+        
+        
+        // clamp targetSpread
+        targetSpreadIndex = min(max(targetSpreadIndex, 0), config.spreadCount-1)
+        
+        // generate offset for the new target spread
+        return VersoView.calc_scrollOffset(spreadIndex:targetSpreadIndex, spreadFrames: spreadFrames, versoSize: versoSize)
     }
     
     
