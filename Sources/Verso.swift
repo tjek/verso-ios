@@ -1017,9 +1017,14 @@ extension VersoView : UIScrollViewDelegate {
                 CATransaction.begin()
                 CATransaction.setDisableActions(true)
                 
+                let oldCenteredSpreadIndex = centeredSpreadIndex
+                
                 _updateCenteredSpreadIndex()
                 _updateVisiblePageIndexes()
-                _preparePageViews()
+                
+                if oldCenteredSpreadIndex != centeredSpreadIndex {
+                    _preparePageViews()
+                }
                 
                 CATransaction.commit()
             }
