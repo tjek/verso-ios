@@ -988,6 +988,10 @@ public class VersoView : UIView {
         
         view.sgn_enableDoubleTapGestures()
         
+        if let dblTap = view.sgn_doubleTapGesture {
+            view.panGestureRecognizer.require(toFail:dblTap)
+        }
+        
         return view
     }()
     
