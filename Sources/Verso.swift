@@ -971,6 +971,7 @@ public class VersoView : UIView {
         let view = UIScrollView(frame:self.frame)
         view.delegate = self
         view.decelerationRate = UIScrollViewDecelerationRateFast
+        view.showsHorizontalScrollIndicator = false
         
         return view
     }()
