@@ -988,10 +988,6 @@ public class VersoView : UIView {
         
         view.sgn_enableDoubleTapGestures()
         
-        if let dblTap = view.sgn_doubleTapGesture {
-            view.panGestureRecognizer.require(toFail:dblTap)
-        }
-        
         return view
     }()
     
@@ -1750,6 +1746,8 @@ extension UIScrollView {
 
         addGestureRecognizer(doubleTap!)
         doubleTap!.isEnabled = true
+        
+        self.panGestureRecognizer.require(toFail:doubleTap!)
     }
     
     /// This will remove and nil-out the double-tap gesture.
