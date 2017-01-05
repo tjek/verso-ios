@@ -240,7 +240,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = AE4CC9821DB0EE2B0087819C /* Verso-Debug.xcconfig */;
 			buildSettings = {
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 			};
 			name = Debug;
 		};
@@ -248,7 +247,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = AE4CC9841DB0EE2B0087819C /* Verso-Release.xcconfig */;
 			buildSettings = {
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 			};
 			name = Release;
 		};
