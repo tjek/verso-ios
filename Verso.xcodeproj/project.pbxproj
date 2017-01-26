@@ -27,6 +27,7 @@
 		AE4CC9821DB0EE2B0087819C /* Verso-Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Verso-Debug.xcconfig"; sourceTree = "<group>"; };
 		AE4CC9831DB0EE2B0087819C /* Verso-Framework.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Verso-Framework.xcconfig"; sourceTree = "<group>"; };
 		AE4CC9841DB0EE2B0087819C /* Verso-Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Verso-Release.xcconfig"; sourceTree = "<group>"; };
+		AECA90531E39EB8000488DE3 /* Verso.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = Verso.playground; sourceTree = "<group>"; };
 		AED8AA351D89472A00C92ED5 /* Verso.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Verso.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AED8AA411D8947A900C92ED5 /* Verso.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Verso.swift; sourceTree = "<group>"; };
 		AED8AA4D1D8947F400C92ED5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -103,6 +104,7 @@
 			isa = PBXGroup;
 			children = (
 				AED8AA631D894ACB00C92ED5 /* Verso.podspec */,
+				AECA90531E39EB8000488DE3 /* Verso.playground */,
 				AED8AA401D8947A900C92ED5 /* Sources */,
 				AED8AA4C1D8947F400C92ED5 /* Resources */,
 				AE4CC90F1DB0CC660087819C /* Configurations */,
