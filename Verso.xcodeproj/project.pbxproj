@@ -157,7 +157,6 @@
 				AED8AA311D89472A00C92ED5 /* Frameworks */,
 				AED8AA321D89472A00C92ED5 /* Headers */,
 				AED8AA331D89472A00C92ED5 /* Resources */,
-				AEF7DD011DB0B12200186111 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -209,22 +208,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		AEF7DD011DB0B12200186111 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "echo \"Verso Build!\"";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		AED8AA301D89472A00C92ED5 /* Sources */ = {
