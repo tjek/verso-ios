@@ -173,12 +173,12 @@
 		AED8AA2C1D89472A00C92ED5 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0810;
+				LastUpgradeCheck = 0920;
 				ORGANIZATIONNAME = ShopGun;
 				TargetAttributes = {
 					AED8AA341D89472A00C92ED5 = {
 						CreatedOnToolsVersion = 7.3.1;
-						LastSwiftMigration = 0800;
+						LastSwiftMigration = 0920;
 					};
 				};
 			};
@@ -225,6 +225,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = AE4CC9821DB0EE2B0087819C /* Verso-Debug.xcconfig */;
 			buildSettings = {
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
 			};
 			name = Debug;
 		};
@@ -232,6 +236,11 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = AE4CC9841DB0EE2B0087819C /* Verso-Release.xcconfig */;
 			buildSettings = {
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 			};
 			name = Release;
 		};
@@ -239,6 +248,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = AE4CC9831DB0EE2B0087819C /* Verso-Framework.xcconfig */;
 			buildSettings = {
+				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
+				SWIFT_VERSION = 4.0;
 			};
 			name = Debug;
 		};
@@ -246,6 +257,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = AE4CC9831DB0EE2B0087819C /* Verso-Framework.xcconfig */;
 			buildSettings = {
+				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
+				SWIFT_VERSION = 4.0;
 			};
 			name = Release;
 		};
