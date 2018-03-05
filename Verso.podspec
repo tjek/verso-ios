@@ -13,10 +13,11 @@ Verso makes it easy to implement a flexible multi-page book-like layout.
   s.social_media_url   = "http://twitter.com/ShopGun"
   s.source           = { :git => 'https://github.com/shopgun/verso-ios.git', :tag => "v" + s.version.to_s }
 
-  s.platform     = :ios, "8.0"
+  s.platform         = :ios, "8.0"
+  s.swift_version    = "3.0"
 
-  s.source_files = 'Sources/**/*'
+  s.source_files     = 'Sources/**/*'
 
-  s.frameworks = 'UIKit'
+  s.frameworks       = 'UIKit'
 
 end
