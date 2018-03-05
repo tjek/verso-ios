@@ -1,22 +1,22 @@
 Pod::Spec.new do |s|
-    s.name         = "Verso"
-    s.version      = "0.2"
-    s.summary      = "A multi-paged image viewer for iOS"
-    
-    s.homepage     = "https://github.com/eTilbudsavis/ios-verso"
-    s.license      = "MIT"
-    s.author       = { "Laurie Hufford" => "lh@etilbudsavis.dk" }
-    
-    s.platform     = :ios, '6.0'
-    s.requires_arc = true
-    
-    s.source       = {
-        :git => "https://github.com/eTilbudsavis/ios-verso.git",
-        :tag => "v" + s.version.to_s
-    }
-    
-    s.public_header_files = "Verso/ETA_VersoPagedView.h"
-    s.source_files = "Verso/*.{h,m}"
-    s.dependency "SDWebImage", "~> 3.7.1"
-    
+  s.name             = 'Verso'
+  s.version          = '1.0.0'
+  s.summary          = 'A multi-paged image viewer for iOS'
+
+  s.description      = <<-DESC
+Verso makes it easy to implement a flexible multi-page book-like layout.
+                       DESC
+
+  s.homepage         = 'https://github.com/shopgun/verso-ios'
+  s.license          = { :type => 'MIT', :file => 'LICENSE' }
+  s.author           = "ShopGun"
+  s.social_media_url   = "http://twitter.com/ShopGun"
+  s.source           = { :git => 'https://github.com/shopgun/verso-ios.git', :tag => "v" + s.version.to_s }
+
+  s.platform     = :ios, "8.0"
+
+  s.source_files = 'Sources/**/*'
+
+  s.frameworks = 'UIKit'
+
 end

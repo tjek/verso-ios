@@ -1,0 +1,289 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AED8AA421D8947A900C92ED5 /* Verso.swift in Sources */ = {isa = PBXBuildFile; fileRef = AED8AA411D8947A900C92ED5 /* Verso.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AE4CC9141DB0CD1E0087819C /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
+		AE4CC9411DB0DB330087819C /* Common.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
+		AE4CC9431DB0DB330087819C /* iOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = iOS.xcconfig; sourceTree = "<group>"; };
+		AE4CC9441DB0DB330087819C /* macOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = macOS.xcconfig; sourceTree = "<group>"; };
+		AE4CC9451DB0DB330087819C /* tvOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = tvOS.xcconfig; sourceTree = "<group>"; };
+		AE4CC9461DB0DB330087819C /* watchOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = watchOS.xcconfig; sourceTree = "<group>"; };
+		AE4CC9481DB0DB330087819C /* Application.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Application.xcconfig; sourceTree = "<group>"; };
+		AE4CC9491DB0DB330087819C /* DynamicFramework.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = DynamicFramework.xcconfig; sourceTree = "<group>"; };
+		AE4CC94A1DB0DB330087819C /* LogicTests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LogicTests.xcconfig; sourceTree = "<group>"; };
+		AE4CC94B1DB0DB330087819C /* StaticFramework.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = StaticFramework.xcconfig; sourceTree = "<group>"; };
+		AE4CC94D1DB0DB330087819C /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		AE4CC94E1DB0DB330087819C /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		AE4CC94F1DB0DB330087819C /* Warnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Warnings.xcconfig; sourceTree = "<group>"; };
+		AE4CC9821DB0EE2B0087819C /* Verso-Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Verso-Debug.xcconfig"; sourceTree = "<group>"; };
+		AE4CC9831DB0EE2B0087819C /* Verso-Framework.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Verso-Framework.xcconfig"; sourceTree = "<group>"; };
+		AE4CC9841DB0EE2B0087819C /* Verso-Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Verso-Release.xcconfig"; sourceTree = "<group>"; };
+		AECA90531E39EB8000488DE3 /* Verso.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = Verso.playground; sourceTree = "<group>"; };
+		AED8AA351D89472A00C92ED5 /* Verso.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Verso.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		AED8AA411D8947A900C92ED5 /* Verso.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Verso.swift; sourceTree = "<group>"; };
+		AED8AA4D1D8947F400C92ED5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AED8AA631D894ACB00C92ED5 /* Verso.podspec */ = {isa = PBXFileReference; lastKnownFileType = text; path = Verso.podspec; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AED8AA311D89472A00C92ED5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AE4CC90F1DB0CC660087819C /* Configurations */ = {
+			isa = PBXGroup;
+			children = (
+				AE4CC9831DB0EE2B0087819C /* Verso-Framework.xcconfig */,
+				AE4CC9821DB0EE2B0087819C /* Verso-Debug.xcconfig */,
+				AE4CC9841DB0EE2B0087819C /* Verso-Release.xcconfig */,
+				AE4CC9141DB0CD1E0087819C /* Version.xcconfig */,
+				AE4CC9401DB0DB330087819C /* Shared */,
+			);
+			path = Configurations;
+			sourceTree = "<group>";
+		};
+		AE4CC9401DB0DB330087819C /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				AE4CC9411DB0DB330087819C /* Common.xcconfig */,
+				AE4CC9421DB0DB330087819C /* Platform */,
+				AE4CC9471DB0DB330087819C /* Product */,
+				AE4CC94C1DB0DB330087819C /* Project */,
+				AE4CC94F1DB0DB330087819C /* Warnings.xcconfig */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		AE4CC9421DB0DB330087819C /* Platform */ = {
+			isa = PBXGroup;
+			children = (
+				AE4CC9431DB0DB330087819C /* iOS.xcconfig */,
+				AE4CC9441DB0DB330087819C /* macOS.xcconfig */,
+				AE4CC9451DB0DB330087819C /* tvOS.xcconfig */,
+				AE4CC9461DB0DB330087819C /* watchOS.xcconfig */,
+			);
+			path = Platform;
+			sourceTree = "<group>";
+		};
+		AE4CC9471DB0DB330087819C /* Product */ = {
+			isa = PBXGroup;
+			children = (
+				AE4CC9481DB0DB330087819C /* Application.xcconfig */,
+				AE4CC9491DB0DB330087819C /* DynamicFramework.xcconfig */,
+				AE4CC94A1DB0DB330087819C /* LogicTests.xcconfig */,
+				AE4CC94B1DB0DB330087819C /* StaticFramework.xcconfig */,
+			);
+			path = Product;
+			sourceTree = "<group>";
+		};
+		AE4CC94C1DB0DB330087819C /* Project */ = {
+			isa = PBXGroup;
+			children = (
+				AE4CC94D1DB0DB330087819C /* Debug.xcconfig */,
+				AE4CC94E1DB0DB330087819C /* Release.xcconfig */,
+			);
+			path = Project;
+			sourceTree = "<group>";
+		};
+		AED8AA2B1D89472A00C92ED5 = {
+			isa = PBXGroup;
+			children = (
+				AED8AA631D894ACB00C92ED5 /* Verso.podspec */,
+				AECA90531E39EB8000488DE3 /* Verso.playground */,
+				AED8AA401D8947A900C92ED5 /* Sources */,
+				AED8AA4C1D8947F400C92ED5 /* Resources */,
+				AE4CC90F1DB0CC660087819C /* Configurations */,
+				AED8AA361D89472A00C92ED5 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AED8AA361D89472A00C92ED5 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AED8AA351D89472A00C92ED5 /* Verso.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AED8AA401D8947A900C92ED5 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				AED8AA411D8947A900C92ED5 /* Verso.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		AED8AA4C1D8947F400C92ED5 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				AED8AA4D1D8947F400C92ED5 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		AED8AA321D89472A00C92ED5 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		AED8AA341D89472A00C92ED5 /* Verso */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AED8AA3D1D89472A00C92ED5 /* Build configuration list for PBXNativeTarget "Verso" */;
+			buildPhases = (
+				AED8AA301D89472A00C92ED5 /* Sources */,
+				AED8AA311D89472A00C92ED5 /* Frameworks */,
+				AED8AA321D89472A00C92ED5 /* Headers */,
+				AED8AA331D89472A00C92ED5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Verso;
+			productName = Verso;
+			productReference = AED8AA351D89472A00C92ED5 /* Verso.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AED8AA2C1D89472A00C92ED5 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0920;
+				ORGANIZATIONNAME = ShopGun;
+				TargetAttributes = {
+					AED8AA341D89472A00C92ED5 = {
+						CreatedOnToolsVersion = 7.3.1;
+						LastSwiftMigration = 0920;
+					};
+				};
+			};
+			buildConfigurationList = AED8AA2F1D89472A00C92ED5 /* Build configuration list for PBXProject "Verso" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = AED8AA2B1D89472A00C92ED5;
+			productRefGroup = AED8AA361D89472A00C92ED5 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AED8AA341D89472A00C92ED5 /* Verso */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AED8AA331D89472A00C92ED5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AED8AA301D89472A00C92ED5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AED8AA421D8947A900C92ED5 /* Verso.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AED8AA3B1D89472A00C92ED5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = AE4CC9821DB0EE2B0087819C /* Verso-Debug.xcconfig */;
+			buildSettings = {
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+			};
+			name = Debug;
+		};
+		AED8AA3C1D89472A00C92ED5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = AE4CC9841DB0EE2B0087819C /* Verso-Release.xcconfig */;
+			buildSettings = {
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+			};
+			name = Release;
+		};
+		AED8AA3E1D89472A00C92ED5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = AE4CC9831DB0EE2B0087819C /* Verso-Framework.xcconfig */;
+			buildSettings = {
+				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
+				SWIFT_VERSION = 4.0;
+			};
+			name = Debug;
+		};
+		AED8AA3F1D89472A00C92ED5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = AE4CC9831DB0EE2B0087819C /* Verso-Framework.xcconfig */;
+			buildSettings = {
+				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
+				SWIFT_VERSION = 4.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AED8AA2F1D89472A00C92ED5 /* Build configuration list for PBXProject "Verso" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AED8AA3B1D89472A00C92ED5 /* Debug */,
+				AED8AA3C1D89472A00C92ED5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AED8AA3D1D89472A00C92ED5 /* Build configuration list for PBXNativeTarget "Verso" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AED8AA3E1D89472A00C92ED5 /* Debug */,
+				AED8AA3F1D89472A00C92ED5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AED8AA2C1D89472A00C92ED5 /* Project object */;
+}
