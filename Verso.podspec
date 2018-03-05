@@ -9,10 +9,11 @@ Verso makes it easy to implement a flexible multi-page book-like layout.
 
   s.homepage         = 'https://github.com/shopgun/verso-ios'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
-  s.author           = { 'Laurie Hufford' => 'lh@shopgun.com' }
+  s.author           = "ShopGun"
+  s.social_media_url   = "http://twitter.com/ShopGun"
   s.source           = { :git => 'https://github.com/shopgun/verso-ios.git', :tag => "v" + s.version.to_s }
 
-  s.ios.deployment_target = '8.0'
+  s.platform     = :ios, "8.0"
 
   s.source_files = 'Sources/**/*'
 
