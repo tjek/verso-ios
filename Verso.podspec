@@ -14,7 +14,7 @@ Verso makes it easy to implement a flexible multi-page book-like layout.
   s.source           = { :git => 'https://github.com/shopgun/verso-ios.git', :tag => "v" + s.version.to_s }
 
   s.platform         = :ios, "8.0"
-  s.swift_version    = "3.0"
+  s.swift_version    = "4.0"
 
   s.source_files     = 'Sources/**/*'
 
