@@ -972,7 +972,9 @@ public class VersoView : UIView {
         view.delegate = self
         view.decelerationRate = UIScrollViewDecelerationRateFast
         view.showsHorizontalScrollIndicator = false
-        
+        if #available(iOS 11.0, *) {
+            view.contentInsetAdjustmentBehavior = .never
+        }
         return view
     }()
     
@@ -986,6 +988,10 @@ public class VersoView : UIView {
         view.delegate = self
         view.maximumZoomScale = 1.0
         
+        if #available(iOS 11.0, *) {
+            view.contentInsetAdjustmentBehavior = .never
+        }
+
         view.sgn_enableDoubleTapGestures()
         
         return view
