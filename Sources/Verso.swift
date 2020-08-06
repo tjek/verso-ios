@@ -271,7 +271,10 @@ public class VersoView : UIView {
         }
     }
     
-    
+    // MARK: Zooming
+    public func zoomOut(animated: Bool = true) {
+        self.zoomView.setZoomScale(1.0, animated: animated)
+    }
     
     
     
