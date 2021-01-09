@@ -1,14 +1,8 @@
-//
-//  _____ _           _____
-// |   __| |_ ___ ___|   __|_ _ ___
-// |__   |   | . | . |  |  | | |   |
-// |_____|_|_|___|  _|_____|___|_|_|
-//               |_|
-//
-//  Copyright (c) 2016 ShopGun. All rights reserved.
+///
+///  Copyright (c) 2016 Tjek. All rights reserved.
+///
 
 import UIKit
-
 
 // MARK: - Delegate
 
@@ -476,7 +470,7 @@ public class VersoView : UIView {
                 let pageViewClass:VersoPageViewClass = dataSource?.pageViewClass(on:pageIndex, for:self) ?? VersoPageView.self
                 
                 // try to find a pageView of the correct type from the recycle bin
-                if let recycleIndex = recyclablePageViews.index(where: { (recyclablePageView:VersoPageView) -> Bool in
+                if let recycleIndex = recyclablePageViews.firstIndex(where: { (recyclablePageView:VersoPageView) -> Bool in
                     return type(of: recyclablePageView) === pageViewClass
                 }) {
                     pageView = recyclablePageViews.remove(at: recycleIndex)
@@ -973,7 +967,7 @@ public class VersoView : UIView {
     fileprivate lazy var pageScrollView:UIScrollView = {
         let view = UIScrollView(frame:self.frame)
         view.delegate = self
-        view.decelerationRate = UIScrollViewDecelerationRateFast
+        view.decelerationRate = UIScrollView.DecelerationRate.fast
         view.showsHorizontalScrollIndicator = false
         if #available(iOS 11.0, *) {
             view.contentInsetAdjustmentBehavior = .never
@@ -1349,7 +1343,7 @@ extension VersoView {
             if let contentView = delegate?.viewForZooming?(in: self) {
                 
                 let newInset = _targetedInsets(contentView)
-                if UIEdgeInsetsEqualToEdgeInsets(newInset, self.contentInset) == false {
+                if newInset != self.contentInset {
                     self.contentInset = newInset
                 }
             }

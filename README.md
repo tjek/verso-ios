@@ -9,12 +9,10 @@ A multi-paged image viewer for iOS.
 
 Verso makes it easy to layout a horizontally scrolling book-like view, with multiple pages visible and zoomable at any one time.
 
-
 ## Requirements
 
-- iOS 8.0+
-- Xcode 8.0+
-- Swift 3.0+
+- iOS 9.3+
+- Swift 5.0+
 
 ## Installation
 
