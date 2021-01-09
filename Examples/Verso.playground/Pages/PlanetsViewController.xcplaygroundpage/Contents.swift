@@ -1,8 +1,6 @@
 
 import UIKit
-
 import Verso
-
 
 class PlanetsViewController: UIViewController {
     
