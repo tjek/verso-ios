@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "Verso",
+    defaultLocalization: "en",
     platforms: [
         .iOS(.v9),
     ],
