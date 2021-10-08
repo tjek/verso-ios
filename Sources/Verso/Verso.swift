@@ -6,7 +6,7 @@ import UIKit
 
 // MARK: - Delegate
 
-public protocol VersoViewDelegate : class {
+public protocol VersoViewDelegate: AnyObject {
     /// This is triggered whenever the centered pages change.
     func currentPageIndexesChanged(current currentPageIndexes:IndexSet, previous oldPageIndexes:IndexSet, in verso:VersoView)
     /// This is triggered whenever the centered pages change, but only once any scrolling or re-layout animation finishes. This will be triggered even if current & previous are the same.
@@ -53,7 +53,7 @@ public protocol VersoViewDataSource : VersoViewDataSourceOptional {
     
 }
 
-public protocol VersoViewDataSourceOptional : class {
+public protocol VersoViewDataSourceOptional: AnyObject {
     /// How many pages before the currently visible pageIndexes to preload. 
     /// Ignored if `preloadPageIndexesForVerso` does not return nil.
     func pageCountToPreload(before visiblePageIndexes:IndexSet, for verso:VersoView) -> Int
