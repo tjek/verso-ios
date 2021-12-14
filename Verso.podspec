@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
 
   s.name         = 'Verso'
-  s.version      = '1.0.5'
+  s.version      = '1.0.6'
   s.summary      = 'A multi-paged image viewer for iOS'
   s.description  = <<-DESC
                     Verso makes it easy to implement a flexible multi-page book-like layout.
