@@ -1,13 +1,13 @@
 Pod::Spec.new do |s|
 
   s.name         = 'Verso'
-  s.version      = '1.0.6'
+  s.version      = '1.0.7'
   s.summary      = 'A multi-paged image viewer for iOS'
   s.description  = <<-DESC
                     Verso makes it easy to implement a flexible multi-page book-like layout.
                    DESC
 
-  s.homepage     = 'https://github.com/shopgun/verso-ios'
+  s.homepage     = 'https://github.com/tjek/verso-ios'
   s.license      = "MIT"
   s.author       = "Tjek"
   
@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   s.pod_target_xcconfig = { 'SWIFT_VERSION' => '5.0' }
 
   s.source = {
-    :git => 'https://github.com/shopgun/verso-ios.git',
+    :git => 'https://github.com/tjek/verso-ios.git',
     :tag => s.version
   }
 

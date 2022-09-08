@@ -45,7 +45,7 @@ $ brew install carthage
 To integrate Verso into your Xcode project using Carthage, specify it in your `Cartfile`:
 
 ```ogdl
-github "ShopGun/Verso"
+github "Tjek/Verso"
 ```
 
 Run `carthage update` to build the framework and drag the built `Verso.framework` into your Xcode project.
@@ -67,7 +67,7 @@ In Verso, the datasource provides a `spread configuration`. This defines the pro
 
 ## Author
 
-Laurie Hufford (lh@shopgun.com)
+Laurie Hufford (lh@tjek.com)
 
 ## License
 
